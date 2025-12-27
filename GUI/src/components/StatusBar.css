@@ -1,0 +1,144 @@
+.status-bar-pro {
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: var(--spacing-md) var(--spacing-xl);
+  display: flex;
+  gap: var(--spacing-xl);
+  align-items: center;
+}
+
+.status-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-text-tertiary);
+}
+
+/* Instrument Display */
+.instrument-display .instrument-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* WiFi Connection */
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.wifi-icon {
+  width: 20px;
+  height: 16px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.wifi-bar {
+  flex: 1;
+  background: var(--color-text-tertiary);
+  border-radius: 1px;
+  opacity: 0.3;
+}
+
+.wifi-icon.connected .wifi-bar {
+  background: var(--color-success);
+  opacity: 1;
+}
+
+.bar-1 { height: 30%; }
+.bar-2 { height: 60%; }
+.bar-3 { height: 100%; }
+
+.connection-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.wifi-icon.connected + .connection-text {
+  color: var(--color-success);
+}
+
+/* Glove Status */
+.glove-status {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.glove-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.glove-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-tertiary);
+}
+
+.status-dot.active {
+  background: var(--color-success);
+  box-shadow: 0 0 8px var(--color-success);
+}
+
+.battery-mini {
+  width: 40px;
+  height: 8px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-medium);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.battery-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-success), var(--color-success));
+  transition: width 0.3s;
+}
+
+.battery-percent {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+  color: var(--color-text-secondary);
+}
+
+/* Calibration Health */
+.health-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.health-badge.good {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.health-badge.warning {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+}

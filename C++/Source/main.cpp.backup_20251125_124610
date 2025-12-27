@@ -1,0 +1,829 @@
+#include "main_controller.h"
+#include "loop.h"
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <cstring>
+#include <algorithm>
+#include <cmath>
+
+#ifdef _WIN32
+#include <conio.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+// PacketParser implementation
+std::unique_ptr<SensorSample> PacketParser::parse_left_hand(const uint8_t* data, size_t length) {
+    if (length != LEFT_HAND_SIZE && length != LEFT_HAND_SIZE - 1) {
+        return nullptr;
+    }
+    
+    try {
+        size_t offset = 0;
+        uint8_t esp_id = data[offset]; offset += 1;
+        
+        if (esp_id != LEFT_HAND_ID) {
+            return nullptr;
+        }
+        
+        uint32_t timestamp;
+        memcpy(&timestamp, data + offset, 4); offset += 4;
+        
+        auto sample = std::make_unique<SensorSample>();
+        sample->ts = timestamp / 1000;
+        
+        memcpy(&sample->qw, data + offset, 4); offset += 4;
+        memcpy(&sample->qx, data + offset, 4); offset += 4;
+        memcpy(&sample->qy, data + offset, 4); offset += 4;
+        memcpy(&sample->qz, data + offset, 4); offset += 4;
+        
+        memcpy(&sample->ax, data + offset, 4); offset += 4;
+        memcpy(&sample->ay, data + offset, 4); offset += 4;
+        memcpy(&sample->az, data + offset, 4); offset += 4;
+        
+        memcpy(&sample->gx, data + offset, 4); offset += 4;
+        memcpy(&sample->gy, data + offset, 4); offset += 4;
+        memcpy(&sample->gz, data + offset, 4); offset += 4;
+        
+        memcpy(&sample->flex_thumb, data + offset, 2); offset += 2;
+        memcpy(&sample->flex_index, data + offset, 2); offset += 2;
+        memcpy(&sample->flex_middle, data + offset, 2); offset += 2;
+        memcpy(&sample->flex_ring, data + offset, 2); offset += 2;
+        memcpy(&sample->flex_pinky, data + offset, 2); offset += 2;
+        
+        sample->fsr = 0;
+        
+        return sample;
+        
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+std::unique_ptr<SensorSample> PacketParser::parse_right_hand(const uint8_t* data, size_t length) {
+    if (length != RIGHT_HAND_SIZE) {
+        return nullptr;
+    }
+    
+    try {
+        size_t offset = 0;
+        uint8_t esp_id = data[offset]; offset += 1;
+        
+        if (esp_id != RIGHT_HAND_ID) {
+            return nullptr;
+        }
+        
+        uint32_t timestamp;
+        memcpy(&timestamp, data + offset, 4); offset += 4;
+        
+        auto sample = std::make_unique<SensorSample>();
+        sample->ts = timestamp / 1000;
+        
+        memcpy(&sample->qw, data + offset, 4); offset += 4;
+        memcpy(&sample->qx, data + offset, 4); offset += 4;
+        memcpy(&sample->qy, data + offset, 4); offset += 4;
+        memcpy(&sample->qz, data + offset, 4); offset += 4;
+        
+        memcpy(&sample->ax, data + offset, 4); offset += 4;
+        memcpy(&sample->ay, data + offset, 4); offset += 4;
+        memcpy(&sample->az, data + offset, 4); offset += 4;
+        
+        memcpy(&sample->gx, data + offset, 4); offset += 4;
+        memcpy(&sample->gy, data + offset, 4); offset += 4;
+        memcpy(&sample->gz, data + offset, 4); offset += 4;
+        
+        memcpy(&sample->flex_thumb, data + offset, 2); offset += 2;
+        memcpy(&sample->flex_index, data + offset, 2); offset += 2;
+        memcpy(&sample->flex_middle, data + offset, 2); offset += 2;
+        memcpy(&sample->flex_ring, data + offset, 2); offset += 2;
+        memcpy(&sample->flex_pinky, data + offset, 2); offset += 2;
+        
+        memcpy(&sample->fsr, data + offset, 2); offset += 2;
+        
+        return sample;
+        
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+// UDPReceiver implementation
+UDPReceiver::UDPReceiver(int port) : port_(port), 
+    left_packet_count_(0), right_packet_count_(0),
+    left_error_count_(0), right_error_count_(0), unknown_id_count_(0),
+    last_left_time_(0), last_right_time_(0), last_stats_print_(0) {
+    
+    #ifdef _WIN32
+    sock_ = INVALID_SOCKET;
+    #else
+    sock_ = -1;
+    #endif
+    running_ = false;
+}
+
+UDPReceiver::~UDPReceiver() {
+    stop();
+}
+
+bool UDPReceiver::init_socket() {
+    #ifdef _WIN32
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        return false;
+    }
+    
+    sock_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock_ == INVALID_SOCKET) {
+        WSACleanup();
+        return false;
+    }
+    
+    u_long mode = 1;
+    ioctlsocket(sock_, FIONBIO, &mode);
+    #else
+    sock_ = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock_ < 0) {
+        return false;
+    }
+    
+    int flags = fcntl(sock_, F_GETFL, 0);
+    fcntl(sock_, F_SETFL, flags | O_NONBLOCK);
+    #endif
+    
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(port_);
+    
+    if (bind(sock_, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        cleanup_socket();
+        return false;
+    }
+    
+    return true;
+}
+
+void UDPReceiver::cleanup_socket() {
+    #ifdef _WIN32
+    if (sock_ != INVALID_SOCKET) {
+        closesocket(sock_);
+        sock_ = INVALID_SOCKET;
+        WSACleanup();
+    }
+    #else
+    if (sock_ >= 0) {
+        close(sock_);
+        sock_ = -1;
+    }
+    #endif
+}
+
+bool UDPReceiver::start() {
+    if (!init_socket()) {
+        std::cout << "❌ UDP Receiver: Failed to start - socket error" << std::endl;
+        return false;
+    }
+    
+    std::cout << "✅ UDP Receiver: Listening on 0.0.0.0:" << port_ << std::endl;
+    std::cout << "   Left hand expected: " << PacketParser::LEFT_HAND_SIZE << " bytes" << std::endl;
+    std::cout << "   Right hand expected: " << PacketParser::RIGHT_HAND_SIZE << " bytes" << std::endl;
+    
+    running_ = true;
+    receiver_thread_ = std::thread(&UDPReceiver::receive_loop, this);
+    
+    return true;
+}
+
+void UDPReceiver::receive_loop() {
+    uint8_t buffer[UDP_BUFFER_SIZE];
+    
+    while (running_) {
+        #ifdef _WIN32
+        struct sockaddr_in client_addr;
+        int client_len = sizeof(client_addr);
+        int bytes_received = recvfrom(sock_, (char*)buffer, UDP_BUFFER_SIZE, 0, 
+                                    (struct sockaddr*)&client_addr, &client_len);
+        #else
+        struct sockaddr_in client_addr;
+        socklen_t client_len = sizeof(client_addr);
+        
+        struct pollfd pfd;
+        pfd.fd = sock_;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        
+        int poll_result = poll(&pfd, 1, 1);
+        
+        if (poll_result <= 0) {
+            continue;
+        }
+        
+        int bytes_received = recvfrom(sock_, (char*)buffer, UDP_BUFFER_SIZE, 0,
+                                     (struct sockaddr*)&client_addr, &client_len);
+        #endif  // ✅ ADD THIS - closes the #ifdef _WIN32
+        
+        // ✅ ADD THESE - variable declarations
+        if (bytes_received <= 0) {
+            continue;
+        }
+        
+        uint8_t esp_id = buffer[0];  // ✅ Extract ESP ID from first byte
+        SensorSample* sample = nullptr;  // ✅ Declare sample pointer
+        
+        // Now the existing code works:
+        if (esp_id == LEFT_HAND_ID) {
+            sample = PacketParser::parse_left_hand(buffer, bytes_received);
+            if (sample) {
+                std::lock_guard<std::mutex> lock(sample_mutex_);
+                left_sample_.reset(sample);
+                left_packet_count_++;
+                last_left_time_ = get_current_time();
+            } else {
+                left_error_count_++;
+            }
+        } else if (esp_id == RIGHT_HAND_ID) {
+            sample = PacketParser::parse_right_hand(buffer, bytes_received);
+            if (sample) {
+                std::lock_guard<std::mutex> lock(sample_mutex_);
+                right_sample_.reset(sample);
+                right_packet_count_++;
+                last_right_time_ = get_current_time();
+            } else {
+                right_error_count_++;
+            }
+        } else {
+            unknown_id_count_++;
+            if (unknown_id_count_ < 5) {
+                std::cout << "⚠️ Unknown ESP ID: " << (int)esp_id 
+                         << ", packet size: " << bytes_received << " bytes" << std::endl;
+            }
+        }
+        
+        print_stats_if_needed();
+    }
+}
+
+void UDPReceiver::print_stats_if_needed() {
+    double current_time = get_current_time();
+    if (current_time - last_stats_print_ >= stats_interval_) {
+        Stats stats = get_stats();
+        std::cout << "\n📊 UDP Stats:" << std::endl;
+        std::cout << "   Left:  " << stats.left_packets << " packets, " 
+                 << stats.left_errors << " errors, " << std::fixed << std::setprecision(1)
+                 << stats.left_rate << " Hz" << std::endl;
+        std::cout << "   Right: " << stats.right_packets << " packets, " 
+                 << stats.right_errors << " errors, " << stats.right_rate << " Hz" << std::endl;
+        if (unknown_id_count_ > 0) {
+            std::cout << "   Unknown IDs: " << unknown_id_count_ << std::endl;
+        }
+        last_stats_print_ = current_time;
+    }
+}
+
+void UDPReceiver::stop() {
+    running_ = false;
+    if (receiver_thread_.joinable()) {
+        receiver_thread_.join();
+    bool right_alive = (last_right_time_ > 0) && ((current_time - last_right_time_) < 1.0);
+    return {left_alive, right_alive};
+}
+
+void UDPReceiver::get_samples(std::shared_ptr<const SensorSample>& left, std::shared_ptr<const SensorSample>& right) {
+    std::lock_guard<std::mutex> lock(sample_mutex_);
+    left = left_sample_;
+    right = right_sample_;
+}
+
+UDPReceiver::Stats UDPReceiver::get_stats() {
+    double current_time = get_current_time();
+    double left_duration = (last_left_time_ > 0) ? (current_time - last_left_time_) : 1.0;
+    double right_duration = (last_right_time_ > 0) ? (current_time - last_right_time_) : 1.0;
+    
+    return {
+        left_packet_count_,
+        right_packet_count_,
+        left_error_count_,
+        right_error_count_,
+        unknown_id_count_,
+        left_packet_count_ / std::max(1.0, left_duration),
+        right_packet_count_ / std::max(1.0, right_duration)
+    };
+}
+
+// MP3PlayerController implementation
+MP3PlayerController::MP3PlayerController(const std::string& audio_file_path) : 
+    audio_file_path_(audio_file_path), fsr_active_(false), 
+    audio_playing_(false), audio_loaded_(false) {
+    std::cout << "✅ MP3 Player: Controller initialized" << std::endl;
+}
+
+void MP3PlayerController::handle_samples(const SensorSample* left, const SensorSample* right) {
+    if (!right || !audio_loaded_) return;
+    
+    uint16_t fsr_value = right->fsr;
+    uint16_t fsr_threshold = 1000;
+    
+    if (fsr_value > fsr_threshold && !fsr_active_) {
+        fsr_active_ = true;
+        if (audio_playing_) {
+            std::cout << "🎶 MP3: Playback stopped" << std::endl;
+            audio_playing_ = false;
+        } else {
+            std::cout << "🎶 MP3: Playback started" << std::endl;
+            audio_playing_ = true;
+        }
+    } else if (fsr_value <= fsr_threshold && fsr_active_) {
+        fsr_active_ = false;
+    }
+}
+
+void MP3PlayerController::calibrate(const std::vector<SensorSample>& left_baseline, 
+                                   const std::vector<SensorSample>& right_baseline) {
+}
+
+// InstrumentManager implementation
+void InstrumentManager::initialize_instruments() {
+    instruments_[INSTRUMENT_DRUMS][1] = std::make_unique<DrumControllerFlex>();
+    instruments_[INSTRUMENT_DRUMS][2] = std::make_unique<DrumControllerZones>();
+    instruments_[INSTRUMENT_KEYS][1] = std::make_unique<KeysController>();
+    instruments_[INSTRUMENT_KEYS][2] = std::make_unique<ChordsController>();
+    instruments_[INSTRUMENT_VIOLIN][1] = std::make_unique<ViolinController>();
+    instruments_[INSTRUMENT_GUITAR][1] = std::make_unique<GuitarController>();
+    instruments_[INSTRUMENT_MP3][1] = std::make_unique<MP3PlayerController>("D:\\Main project\\55.mp3");
+    
+    std::cout << "✅ Instrument Manager: All controllers initialized" << std::endl;
+}
+
+InstrumentManager::InstrumentManager() : current_instrument_(INSTRUMENT_DRUMS), 
+    current_mode_(1), paused_(false) {
+    initialize_instruments();
+}
+
+void InstrumentManager::set_instrument(int instrument_id) {
+    if (instrument_id != current_instrument_) {
+        current_instrument_ = instrument_id;
+        current_mode_ = 1;
+        
+        static std::unordered_map<int, std::string> instrument_names = {
+            {INSTRUMENT_DRUMS, "Drums"},
+            {INSTRUMENT_KEYS, "Keys"},
+            {INSTRUMENT_VIOLIN, "Violin"},
+            {INSTRUMENT_GUITAR, "Guitar"},
+            {INSTRUMENT_MP3, "MP3 Player"}
+        };
+        
+        std::cout << "🎵 SWITCHED TO: " << instrument_names[instrument_id] << std::endl;
+    }
+}
+
+void InstrumentManager::set_mode(int mode) {
+    if (mode != current_mode_) {
+        current_mode_ = mode;
+        static std::unordered_map<int, std::string> mode_names = {{1, "A"}, {2, "B"}};
+        std::cout << "🔀 MODE: " << mode_names[mode] << std::endl;
+    }
+}
+
+void InstrumentManager::handle_samples(const SensorSample* left, const SensorSample* right, bool paused) {
+    if (paused) return;
+    
+    auto instrument_it = instruments_.find(current_instrument_);
+    if (instrument_it != instruments_.end()) {
+        auto mode_it = instrument_it->second.find(current_mode_);
+        if (mode_it != instrument_it->second.end() && mode_it->second) {
+            mode_it->second->handle_samples(left, right);
+        }
+    }
+}
+
+void InstrumentManager::calibrate_all(const std::vector<SensorSample>& left_samples, 
+                                     const std::vector<SensorSample>& right_samples) {
+    std::cout << "🔧 Broadcasting calibration to all instruments..." << std::endl;
+    
+    auto left_baseline_dict = KeysController::CalibrationHelper::compute_orientation_baseline(left_samples, 50);
+    auto right_baseline_dict = KeysController::CalibrationHelper::compute_orientation_baseline(right_samples, 50);
+    
+    if (left_baseline_dict.empty() || right_baseline_dict.empty()) {
+        std::cout << "⚠️ Warning: Could not compute orientation baselines for keys" << std::endl;
+    }
+    
+    for (auto& instrument_pair : instruments_) {
+        for (auto& mode_pair : instrument_pair.second) {
+            if (mode_pair.second) {
+                if (instrument_pair.first == INSTRUMENT_KEYS) {
+                    std::vector<SensorSample> left_baseline_vec, right_baseline_vec;
+                    mode_pair.second->calibrate(left_baseline_vec, right_baseline_vec);
+                } else {
+                    mode_pair.second->calibrate(left_samples, right_samples);
+                }
+            }
+        }
+    }
+    
+    std::cout << "✅ Calibration broadcast complete" << std::endl;
+}
+
+// CalibrationManager implementation
+CalibrationManager::CalibrationManager() : calibrated_(false) {
+}
+
+bool CalibrationManager::start_calibration() {
+    std::cout << "\n🎯 CALIBRATION STARTING..." << std::endl;
+    for (int i = 3; i > 0; --i) {
+        std::cout << i << "..." << std::endl;
+        cross_platform_sleep(1.0);
+    }
+    std::cout << "CALIBRATING NOW! Hold hands in neutral position..." << std::endl;
+    
+    calibration_samples_.clear();
+    calibrated_ = false;
+    return true;
+}
+
+bool CalibrationManager::collect_calibration_data(const SensorSample* left, const SensorSample* right) {
+    if (!left || !right) return false;
+    
+    if (calibration_samples_.size() < 50) {
+        calibration_samples_.push_back({*left, *right});
+        double progress = (calibration_samples_.size() / 50.0) * 100.0;
+        std::cout << "📊 Calibrating... " << static_cast<int>(progress) << "%" << std::flush << "\r";
+        return false;
+    } else {
+        std::cout << std::endl;
+        return true;
+    }
+}
+
+void CalibrationManager::get_calibration_samples(std::vector<SensorSample>& left_samples, 
+                                               std::vector<SensorSample>& right_samples) {
+    left_samples.clear();
+    right_samples.clear();
+    
+    for (const auto& sample_pair : calibration_samples_) {
+        left_samples.push_back(sample_pair.first);
+        right_samples.push_back(sample_pair.second);
+    }
+}
+
+// MainController implementation
+MainController::MainController() : running_(false), calibrating_(false),
+    fsr_pressed_(false), fsr_press_time_(0), fsr_cooldown_(0.5),
+    fsr_debug_counter_(0), fsr_debug_interval_(100), last_fsr_switch_(0) {
+    
+    std::cout << "\n" << std::string(70, '=') << std::endl;
+    std::cout << "🎵 DUAL HAND ESP32 MUSICAL GLOVE SYSTEM - WiFi UDP Version" << std::endl;
+    std::cout << std::string(70, '=') << std::endl;
+    
+    loop_manager_ = std::make_unique<LoopManager>();
+    instrument_manager_ = std::make_unique<InstrumentManager>();
+    calibration_manager_ = std::make_unique<CalibrationManager>();
+    udp_receiver_ = std::make_unique<UDPReceiver>();
+    
+    initialize_audio();
+    std::cout << "✅ Main Controller initialized" << std::endl;
+}
+
+MainController::~MainController() {
+    cleanup();
+}
+
+void MainController::initialize_audio() {
+    std::cout << "✅ Audio system initialized" << std::endl;
+}
+
+void MainController::cleanup_audio() {
+}
+
+bool MainController::connect_udp() {
+    std::cout << "\n🔌 Starting UDP receiver..." << std::endl;
+    
+    if (!udp_receiver_->start()) {
+        std::cout << "❌ Failed to start UDP receiver" << std::endl;
+        return false;
+    }
+    
+    std::cout << "⏳ Waiting for both gloves to connect..." << std::endl;
+    std::cout << "   Make sure ESP32s are powered on and connected to WiFi 'GloveTone2025'" << std::endl;
+    
+    double timeout = 15.0;
+    double start_time = get_current_time();
+    
+    while (get_current_time() - start_time < timeout) {
+        auto [left_alive, right_alive] = udp_receiver_->check_streaming();
+        
+        if (left_alive && !right_alive) {
+            std::cout << "   ✅ Left hand detected, waiting for right hand..." << std::endl;
+        } else if (right_alive && !left_alive) {
+            std::cout << "   ✅ Right hand detected, waiting for left hand..." << std::endl;
+        } else if (left_alive && right_alive) {
+            std::cout << "✅ Both hands detected and streaming!" << std::endl;
+            auto stats = udp_receiver_->get_stats();
+            std::cout << "   Left: " << stats.left_packets << " packets, " 
+                     << stats.left_rate << " Hz" << std::endl;
+            std::cout << "   Right: " << stats.right_packets << " packets, " 
+                     << stats.right_rate << " Hz" << std::endl;
+            return true;
+        }
+        
+        cross_platform_sleep(0.5);
+    }
+    
+    std::cout << "❌ Timeout: Could not detect both hands" << std::endl;
+    std::cout << "   Troubleshooting:" << std::endl;
+    std::cout << "   1. Check ESP32 power and WiFi connection" << std::endl;
+    std::cout << "   2. Verify PC is connected to 'GloveTone2025' network" << std::endl;
+    std::cout << "   3. Check PC IP is 192.168.137.1" << std::endl;
+    std::cout << "   4. Verify UDP port 8888 is not blocked by firewall" << std::endl;
+    return false;
+}
+
+bool MainController::trigger_calibration() {
+    if (!calibrating_) {
+        calibrating_ = true;
+        return calibration_manager_->start_calibration();
+    }
+    return false;
+}
+
+void MainController::handle_fsr_mode_switch(const SensorSample* right_sample) {
+    if (!right_sample) return;
+    
+    uint16_t fsr_value = right_sample->fsr;
+    double current_time = get_current_time();
+    
+    fsr_debug_counter_++;
+    if (fsr_debug_counter_ >= fsr_debug_interval_) {
+        fsr_debug_counter_ = 0;
+    }
+    
+    if (fsr_value > FSR_PRESS_THRESHOLD && !fsr_pressed_) {
+        fsr_pressed_ = true;
+        fsr_press_time_ = current_time;
+        return;
+    } else if (fsr_pressed_ && fsr_value < FSR_RELEASE_THRESHOLD) {
+        double press_duration = current_time - fsr_press_time_;
+        fsr_pressed_ = false;
+        
+        if (press_duration >= 0.1 && press_duration <= 1.0 &&
+            current_time - last_fsr_switch_ > fsr_cooldown_) {
+            
+            toggle_current_mode();
+            last_fsr_switch_ = current_time;
+        }
+    }
+}
+
+void MainController::toggle_current_mode() {
+    int current_instrument = instrument_manager_->get_current_instrument();
+    int current_mode = instrument_manager_->get_current_mode();
+    
+    if (current_instrument == INSTRUMENT_DRUMS || current_instrument == INSTRUMENT_KEYS) {
+        int new_mode = (current_mode == 1) ? 2 : 1;
+        instrument_manager_->set_mode(new_mode);
+        
+        static std::unordered_map<int, std::string> instrument_names = {
+            {INSTRUMENT_DRUMS, "Drums"}, {INSTRUMENT_KEYS, "Keys"}
+        };
+        std::cout << "🔀 FSR MODE SWITCH: " << instrument_names[current_instrument] 
+                 << " Mode " << new_mode << std::endl;
+    }
+}
+
+char MainController::check_keyboard_input() {
+    #ifdef _WIN32
+    if (_kbhit()) {
+        char key = _getch();
+        if (key == 'c' || key == 'C') return 'C';
+    }
+    #else
+    struct termios oldt, newt;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    
+    fd_set readfds;
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+    
+    FD_ZERO(&readfds);
+    FD_SET(STDIN_FILENO, &readfds);
+    
+    if (select(STDIN_FILENO + 1, &readfds, NULL, NULL, &timeout) > 0) {
+        char key = getchar();
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+        if (key == 'c' || key == 'C') return 'C';
+    }
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    #endif
+    return 0;
+}
+
+void MainController::run() {
+    if (!connect_udp()) {
+        std::cout << "❌ Failed to establish UDP connection. Exiting." << std::endl;
+        return;
+    }
+    
+    std::cout << "\n🎵 SYSTEM READY!" << std::endl;
+    std::cout << "Press 'C' to calibrate, Ctrl+C to exit" << std::endl;
+    std::cout << "FSR Quick Press: Toggle between Mode 1/2 (Drums & Keys only)" << std::endl;
+    std::cout << "Gesture Controls: Wakanda=Instrument, L-pose+Flick=Pause, Right L-pose=Loop" << std::endl;
+    std::cout << std::string(70, '=') << "\n" << std::endl;
+    
+    running_ = true;
+    
+    try {
+        while (running_) {
+            if (calibrating_) {
+                if (left_sample && right_sample) {
+                    if (calibration_manager_->collect_calibration_data(left_sample.get(), right_sample.get())) {
+                        std::vector<SensorSample> left_samples, right_samples;
+                        calibration_manager_->get_calibration_samples(left_samples, right_samples);
+                        
+                        instrument_manager_->calibrate_all(left_samples, right_samples);
+                        loop_manager_->calibrate(left_samples, right_samples);
+                        
+                        calibrating_ = false;
+                    }
+                }
+                continue;
+            }
+            
+            std::shared_ptr<const SensorSample> left_sample, right_sample;
+            udp_receiver_->get_samples(left_sample, right_sample);
+            
+            if (!left_sample || !right_sample) {
+                cross_platform_sleep(0.001);
+                continue;
+            }
+            
+            loop_manager_->handle_samples(left_sample.get(), right_sample.get());
+            
+            if (loop_manager_->instrument_changed()) {
+                int new_instrument = loop_manager_->get_current_instrument();
+                instrument_manager_->set_instrument(new_instrument);
+            }
+            
+            if (loop_manager_->mode_changed()) {
+                int new_mode = loop_manager_->get_current_mode();
+                instrument_manager_->set_mode(new_mode);
+            }
+            
+            bool is_paused = loop_manager_->is_paused();
+            
+            instrument_manager_->handle_samples(left_sample.get(), right_sample.get(), is_paused);
+            
+            cross_platform_sleep(0.001);
+        }
+    } catch (...) {
+        std::cout << "\n❌ Unexpected error in main loop" << std::endl;
+    }
+    
+    cleanup();
+}
+
+void MainController::cleanup() {
+    std::cout << "\n🧹 Cleaning up resources..." << std::endl;
+    running_ = false;
+    udp_receiver_->stop();
+    cleanup_audio();
+    std::cout << "✅ Resources cleaned up. Goodbye!" << std::endl;
+}
+
+double get_current_time() {
+    #ifdef _WIN32
+    return GetTickCount() / 1000.0;
+    #else
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec + ts.tv_nsec / 1e9;
+    #endif
+}
+
+void cross_platform_sleep(double seconds) {
+    #ifdef _WIN32
+    Sleep(static_cast<DWORD>(seconds * 1000));
+    #else
+    usleep(static_cast<useconds_t>(seconds * 1e6));
+    #endif
+}
+
+bool init_network() {
+    #ifdef _WIN32
+    WSADATA wsaData;
+    return WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
+    #else
+    return true;
+    #endif
+}
+
+void cleanup_network() {
+    #ifdef _WIN32
+    WSACleanup();
+    #endif
+}
+
+// ============================================================================
+// KEYSCONTROLLER WRAPPER IMPLEMENTATION
+// ============================================================================
+
+KeysController::KeysController() {
+    impl_ = std::make_unique<KeysControllerImpl>(nullptr);
+}
+
+KeysController::~KeysController() = default;
+
+void KeysController::handle_samples(const SensorSample* left, const SensorSample* right) {
+    impl_->handle_samples(left, right);
+}
+
+void KeysController::calibrate(const std::vector<SensorSample>& left_baseline, 
+                               const std::vector<SensorSample>& right_baseline) {
+    // Convert vector to baseline dicts
+    auto left_dict = CalibrationHelper::compute_orientation_baseline(left_baseline, 50);
+    auto right_dict = CalibrationHelper::compute_orientation_baseline(right_baseline, 50);
+    impl_->calibrate(left_dict, right_dict);
+}
+
+std::unordered_map<std::string, float> KeysController::CalibrationHelper::compute_orientation_baseline(
+    const std::vector<SensorSample>& samples, int count) {
+    return KeysControllerImpl::CalibrationHelper::compute_orientation_baseline(samples, count);
+}
+
+
+// ============================================================================
+// DRUMCONTROLLERFLEX WRAPPER IMPLEMENTATION
+// ============================================================================
+DrumControllerFlex::DrumControllerFlex() {
+    impl_ = std::make_unique<DrumFlexControllerImpl>();
+}
+DrumControllerFlex::~DrumControllerFlex() = default;
+
+void DrumControllerFlex::handle_samples(const SensorSample* left, const SensorSample* right) {
+    impl_->handle_samples(left, right);
+}
+void DrumControllerFlex::calibrate(const std::vector<SensorSample>& left_baseline, 
+                                   const std::vector<SensorSample>& right_baseline) {
+    impl_->calibrate(left_baseline, right_baseline);
+}
+
+// ============================================================================
+// DRUMCONTROLLERZONES WRAPPER IMPLEMENTATION
+// ============================================================================
+DrumControllerZones::DrumControllerZones() {
+    impl_ = std::make_unique<DrumZonesControllerImpl>();
+}
+DrumControllerZones::~DrumControllerZones() = default;
+
+void DrumControllerZones::handle_samples(const SensorSample* left, const SensorSample* right) {
+    impl_->handle_samples(left, right);
+}
+void DrumControllerZones::calibrate(const std::vector<SensorSample>& left_baseline, 
+                                    const std::vector<SensorSample>& right_baseline) {
+    impl_->calibrate(left_baseline, right_baseline);
+}
+
+// ============================================================================
+// CHORDSCONTROLLER WRAPPER IMPLEMENTATION
+// ============================================================================
+ChordsController::ChordsController() {
+    impl_ = std::make_unique<ChordsControllerImpl>(nullptr);
+}
+ChordsController::~ChordsController() = default;
+
+void ChordsController::handle_samples(const SensorSample* left, const SensorSample* right) {
+    impl_->handle_samples(left, right);
+}
+void ChordsController::calibrate(const std::vector<SensorSample>& left_baseline, 
+                                 const std::vector<SensorSample>& right_baseline) {
+    // Convert vector to baseline dicts
+    auto left_dict = CalibrationHelper::compute_orientation_baseline(left_baseline, 50);
+    auto right_dict = CalibrationHelper::compute_orientation_baseline(right_baseline, 50);
+    impl_->calibrate(left_dict, right_dict);
+}
+std::unordered_map<std::string, float> ChordsController::CalibrationHelper::compute_orientation_baseline(
+    const std::vector<SensorSample>& samples, int count) {
+    return ChordsControllerImpl::CalibrationHelper::compute_orientation_baseline(samples, count);
+}
+
+int main() {
+    if (!init_network()) {
+        std::cerr << "Failed to initialize network" << std::endl;
+        return 1;
+    }
+    
+    MainController controller;
+    controller.run();
+    
+    cleanup_network();
+    return 0;
+}

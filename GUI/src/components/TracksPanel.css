@@ -1,0 +1,96 @@
+.tracks-panel-juce {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #1E1E1E;
+}
+
+/* Header - JUCE style */
+.tracks-header-juce {
+  height: 60px;
+  background: #262626;
+  border-bottom: 1px solid #111111;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.juce-btn {
+  width: 80px;
+  height: 30px;
+  background: #2D2D2D;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  color: #CCCCCC;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.juce-btn:hover {
+  background: #383838;
+  color: #FFFFFF;
+}
+
+.juce-btn.active-play {
+  background: #00FF00;
+  border-color: #00FF00;
+  color: #000000;
+}
+
+.juce-btn.active-rec {
+  background: #FF0000;
+  border-color: #FF0000;
+  color: #FFFFFF;
+}
+
+.bar-display {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: #CCCCCC;
+  font-family: 'Roboto Mono', monospace;
+}
+
+/* Tracks container */
+.tracks-container-juce {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Playhead overlay - Orange line across all tracks */
+.playhead-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.playhead-triangle {
+  position: absolute;
+  top: 0;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 10px solid #FF6C00;
+}
+
+.playhead-line {
+  position: absolute;
+  top: 10px;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: #FF6C00;
+  box-shadow: 0 0 4px #FF6C00;
+}

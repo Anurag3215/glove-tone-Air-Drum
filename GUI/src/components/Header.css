@@ -1,0 +1,113 @@
+.header-minimal {
+  height: 56px;
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-xl);
+  position: relative;
+  z-index: 100;
+}
+
+/* Brand */
+.header-brand-minimal {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-primary);
+}
+
+.brand-version {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+}
+
+/* Navigation */
+.header-nav-minimal {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.nav-item {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: var(--radius-sm);
+}
+
+.nav-item:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+}
+
+.nav-item.active {
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  font-weight: 600;
+}
+
+/* Stats */
+.header-stats {
+  display: flex;
+  gap: var(--spacing-lg);
+  align-items: center;
+}
+
+.stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.stat-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--color-text-tertiary);
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+  color: var(--color-text-primary);
+}
+
+.stat-indicators {
+  display: flex;
+  gap: 4px;
+}
+
+.indicator {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+}
+
+.indicator.on {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #FFFFFF;
+}
+
+.indicator.off {
+  opacity: 0.4;
+}

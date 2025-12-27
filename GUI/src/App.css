@@ -1,0 +1,59 @@
+.app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* LEFT: 3D Hands Panel (50%) */
+.hands-section {
+  flex: 1;
+  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
+  border-right: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-lg);
+  position: relative;
+}
+
+.hands-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(90deg, transparent 0%, rgba(0, 217, 255, 0.03) 50%, transparent 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 217, 255, 0.05) 2px, rgba(0, 217, 255, 0.05) 4px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* RIGHT: Tracks Panel (50%) */
+.tracks-section {
+  flex: 1;
+  background: var(--color-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Fullscreen mode when tracks hidden */
+.hands-section.fullscreen {
+  flex: 1 1 100%;
+}
+
+.tracks-section.hidden {
+  display: none;
+}
