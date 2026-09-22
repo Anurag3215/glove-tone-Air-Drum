@@ -1,0 +1,376 @@
+/* ==========================================================================
+   FUTURISTIC 3D HOLOGRAPHIC DRUM HUD
+   ========================================================================== */
+
+.holo-hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 24px;
+  user-select: none;
+  font-family: 'Roboto Mono', 'SF Mono', Consolas, monospace;
+}
+
+/* ==========================================================================
+   TOP BAR
+   ========================================================================== */
+.holo-hud-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* Top-Left: Brand */
+.holo-hud-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-left: 10px;
+  border-left: 2px solid #00f3ff;
+}
+
+.holo-main-title {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: #FFFFFF;
+  text-shadow: 0 0 12px rgba(0, 243, 255, 0.7);
+  line-height: 1.1;
+}
+
+.holo-sub-title {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #00f3ff;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* Top-Center: Controls */
+.holo-hud-center-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.holo-cam-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(4, 9, 20, 0.82);
+  border: 1px solid rgba(0, 243, 255, 0.25);
+  border-radius: 6px;
+  padding: 6px 14px;
+  color: #CCCCCC;
+  font-size: 10.5px;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.holo-cam-toggle-btn:hover {
+  background: rgba(0, 243, 255, 0.12);
+  border-color: #00f3ff;
+}
+
+.holo-cam-toggle-btn.active {
+  background: rgba(0, 243, 255, 0.18);
+  border-color: #00f3ff;
+  color: #00f3ff;
+  box-shadow: 0 0 14px rgba(0, 243, 255, 0.35);
+}
+
+.cam-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.cam-dot.off {
+  background: #555555;
+}
+
+.cam-dot.on {
+  background: #f59e0b;
+}
+
+.cam-dot.tracking {
+  background: #00ff9d;
+  box-shadow: 0 0 8px #00ff9d;
+  animation: dot-pulse 1.2s infinite ease-in-out;
+}
+
+.holo-hand-switcher {
+  display: flex;
+  background: rgba(4, 9, 20, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px;
+  border-radius: 6px;
+}
+
+.holo-hand-pill {
+  background: transparent;
+  border: none;
+  color: #6C7A8E;
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.holo-hand-pill.active {
+  background: #00f3ff;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.4);
+}
+
+/* Top-Right: Status & Reset */
+.holo-hud-status-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.holo-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(4, 9, 20, 0.75);
+  border: 1px solid rgba(0, 255, 157, 0.25);
+  padding: 5px 12px;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+}
+
+.status-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff9d;
+  box-shadow: 0 0 8px #00ff9d;
+  animation: dot-pulse 1.6s infinite ease-in-out;
+}
+
+.status-live-text {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #00ff9d;
+}
+
+.holo-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(4, 9, 20, 0.75);
+  border: 1px solid rgba(0, 243, 255, 0.35);
+  padding: 5px 12px;
+  border-radius: 6px;
+  color: #00f3ff;
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.holo-reset-btn:hover {
+  background: rgba(0, 243, 255, 0.2);
+  box-shadow: 0 0 12px rgba(0, 243, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.reset-icon {
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   BOTTOM BAR
+   ========================================================================== */
+.holo-hud-bottombar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+/* Bottom-Left: Tempo */
+.holo-tempo-hud {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #00f3ff;
+  text-shadow: 0 0 8px rgba(0, 243, 255, 0.4);
+}
+
+.tempo-bracket-l,
+.tempo-bracket-r {
+  color: rgba(0, 243, 255, 0.45);
+  font-weight: 400;
+}
+
+.tempo-label {
+  color: #8E9BAE;
+}
+
+.tempo-step-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 243, 255, 0.25);
+  color: #00f3ff;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.tempo-step-btn:hover {
+  background: rgba(0, 243, 255, 0.25);
+}
+
+.tempo-val {
+  color: #FFFFFF;
+}
+
+/* Bottom-Center: Minimal 6-Drum Finger Bend Telemetry Strip */
+.holo-finger-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+  flex: 1;
+  max-width: 680px;
+  justify-content: center;
+}
+
+.holo-finger-chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(4, 9, 20, 0.72);
+  border: 1px solid rgba(0, 243, 255, 0.18);
+  border-radius: 5px;
+  padding: 4px 7px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.15s ease;
+}
+
+.holo-finger-chip:hover {
+  border-color: #00f3ff;
+  background: rgba(0, 243, 255, 0.08);
+}
+
+.holo-finger-chip.hit {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: #FFFFFF;
+  box-shadow: 0 0 14px #00f3ff;
+  transform: translateY(-2px);
+}
+
+.chip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chip-finger-name {
+  font-size: 7.5px;
+  font-weight: 800;
+  color: #7E8BA0;
+  letter-spacing: 0.06em;
+}
+
+.chip-arrow {
+  font-size: 7px;
+  color: #445566;
+}
+
+.chip-drum-name {
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.chip-gauge-track {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 1.5px;
+  overflow: hidden;
+}
+
+.chip-gauge-fill {
+  height: 100%;
+  border-radius: 1.5px;
+  transition: width 0.06s ease;
+}
+
+/* Bottom-Right: Mode */
+.holo-mode-hud {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #00f3ff;
+  text-shadow: 0 0 8px rgba(0, 243, 255, 0.4);
+}
+
+.mode-bracket-l,
+.mode-bracket-r {
+  color: rgba(0, 243, 255, 0.45);
+  font-weight: 400;
+}
+
+.mode-pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #00f3ff;
+  box-shadow: 0 0 6px #00f3ff;
+  animation: dot-pulse 1.4s infinite ease-in-out;
+}
+
+.mode-text {
+  color: #FFFFFF;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
