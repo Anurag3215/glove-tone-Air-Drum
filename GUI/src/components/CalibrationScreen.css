@@ -727,3 +727,40 @@
   box-shadow: 0 0 6px currentColor;
   animation: dot-pulse 0.8s infinite ease-in-out;
 }
+
+/* ==========================================================================
+   3D FLOATING DRUM MATRIX BADGE
+   ========================================================================== */
+.drum-3d-badge {
+  background: rgba(6, 10, 16, 0.92);
+  border: 1px solid var(--badge-color, #00f3ff);
+  box-shadow: 0 0 10px var(--badge-color, #00f3ff);
+  padding: 3px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+  transform: translate3d(0, 0, 0);
+}
+
+.drum-3d-badge.hit {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  box-shadow: 0 0 20px #FFFFFF, 0 0 35px var(--badge-color, #00f3ff);
+  transform: scale(1.18);
+}
+
+.drum-3d-badge .badge-text {
+  font-size: 10px;
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--badge-color, #00f3ff);
+  transition: color 0.1s ease;
+}
+
+.drum-3d-badge.hit .badge-text {
+  color: #000000;
+  font-weight: 900;
+}
