@@ -73,6 +73,75 @@
   letter-spacing: 0.08em;
 }
 
+/* Camera Tracking Button */
+.matrix-camera-toggle {
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.matrix-cam-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 14, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 5px 14px;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.matrix-cam-btn:hover {
+  background: rgba(0, 243, 255, 0.12);
+  border-color: rgba(0, 243, 255, 0.4);
+}
+
+.matrix-cam-btn.active {
+  background: rgba(0, 243, 255, 0.16);
+  border-color: #00f3ff;
+  box-shadow: 0 0 16px rgba(0, 243, 255, 0.35);
+}
+
+.matrix-cam-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.matrix-cam-dot.off {
+  background: #555555;
+}
+
+.matrix-cam-dot.on {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.matrix-cam-dot.tracking {
+  background: #00ff9d;
+  box-shadow: 0 0 10px #00ff9d;
+  animation: dot-pulse 1.2s infinite ease-in-out;
+}
+
+.matrix-cam-icon {
+  font-size: 13px;
+}
+
+.matrix-cam-text {
+  font-size: 11px;
+  font-weight: 800;
+  font-family: 'Roboto Mono', monospace;
+  color: #CCCCCC;
+  letter-spacing: 0.06em;
+}
+
+.matrix-cam-btn.active .matrix-cam-text {
+  color: #00f3ff;
+}
+
 .matrix-gesture-option {
   display: flex;
   align-items: center;
@@ -365,4 +434,148 @@
   font-weight: 900;
   color: #00ff9d;
   margin-left: 2px;
+}
+
+/* ==========================================================================
+   MINI OPTICAL TRACKING HUD CARD
+   ========================================================================== */
+.matrix-optical-hud {
+  position: absolute;
+  top: 66px;
+  right: 20px;
+  z-index: 25;
+  background: rgba(8, 12, 18, 0.88);
+  border: 1px solid rgba(0, 243, 255, 0.35);
+  border-radius: 8px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 243, 255, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.matrix-optical-hud.minimized {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+}
+
+.optical-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  background: rgba(0, 243, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+}
+
+.optical-hud-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.optical-hud-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff9d;
+  box-shadow: 0 0 6px #00ff9d;
+  animation: dot-pulse 1.4s infinite ease-in-out;
+}
+
+.optical-hud-title {
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'Roboto Mono', monospace;
+  color: #00f3ff;
+  letter-spacing: 0.08em;
+}
+
+.optical-hud-fps {
+  font-size: 9px;
+  font-weight: 700;
+  font-family: 'Roboto Mono', monospace;
+  color: #00ff9d;
+  background: rgba(0, 255, 157, 0.12);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 255, 157, 0.3);
+}
+
+.optical-hud-min-btn {
+  background: transparent;
+  border: none;
+  color: #8E9BAE;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.optical-hud-min-btn:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.optical-hud-body {
+  position: relative;
+  width: 180px;
+  height: 135px;
+  background: #000000;
+  overflow: hidden;
+}
+
+.optical-hud-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.optical-hud-reticle-tl {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #00f3ff;
+  border-left: 2px solid #00f3ff;
+  pointer-events: none;
+}
+
+.optical-hud-reticle-br {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #00f3ff;
+  border-right: 2px solid #00f3ff;
+  pointer-events: none;
+}
+
+.optical-hud-status-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  background: rgba(10, 14, 22, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 8.5px;
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+}
+
+.hud-hand-tag {
+  color: #6C7A8E;
+  transition: color 0.2s ease;
+}
+
+.hud-hand-tag.active {
+  color: #00ff9d;
+  text-shadow: 0 0 6px rgba(0, 255, 157, 0.6);
 }

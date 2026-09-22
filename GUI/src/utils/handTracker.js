@@ -50,6 +50,10 @@ class HandTrackerService {
     this.leftRaw = new Float32Array(21 * 3)
     this.rightRaw = new Float32Array(21 * 3)
 
+    // Normalized 2D landmarks for HUD preview overlay
+    this.left2D = null
+    this.right2D = null
+
     this.leftDetected = false
     this.rightDetected = false
     this.lastSeenLeft = 0
@@ -199,6 +203,8 @@ class HandTrackerService {
 
     this.leftDetected = false
     this.rightDetected = false
+    this.left2D = null
+    this.right2D = null
     this.resetCanonical('left')
     this.resetCanonical('right')
 
@@ -274,18 +280,22 @@ class HandTrackerService {
     if (leftLM) {
       this.leftDetected = true
       this.lastSeenLeft = now
+      this.left2D = leftLM
       this.smoothAndStore('left', leftLM, scaleX, scaleY, scaleZ)
     } else if (now - this.lastSeenLeft > 500) {
       this.leftDetected = false
+      this.left2D = null
       this.blendCanonical('left', now)
     }
 
     if (rightLM) {
       this.rightDetected = true
       this.lastSeenRight = now
+      this.right2D = rightLM
       this.smoothAndStore('right', rightLM, scaleX, scaleY, scaleZ)
     } else if (now - this.lastSeenRight > 500) {
       this.rightDetected = false
+      this.right2D = null
       this.blendCanonical('right', now)
     }
 
@@ -390,10 +400,12 @@ class HandTrackerService {
   handleLost(now) {
     if (now - this.lastSeenLeft > 500) {
       this.leftDetected = false
+      this.left2D = null
       this.blendCanonical('left', now)
     }
     if (now - this.lastSeenRight > 500) {
       this.rightDetected = false
+      this.right2D = null
       this.blendCanonical('right', now)
     }
 
@@ -440,12 +452,30 @@ class HandTrackerService {
       }
     }
 
+    // Optical rotation quaternion from landmarks
+    const computeOrientation = (arr) => {
+      const yaw = -(arr[27] - arr[0]) * 0.95
+      const pitch = (arr[28] - arr[1] - 1.10) * 0.85
+      const roll = (arr[16] - arr[52]) * 0.85
+      const euler = new THREE.Euler(pitch, yaw, roll, 'XYZ')
+      const q = new THREE.Quaternion().setFromEuler(euler)
+      return { w: q.w, x: q.x, y: q.y, z: q.z }
+    }
+
     const sensorStore = useSensorStore.getState()
     if (this.leftDetected) {
-      sensorStore.updateLeftHand({ flex: computeFlex(this.leftLandmarks), connected: true })
+      sensorStore.updateLeftHand({ 
+        flex: computeFlex(this.leftLandmarks),
+        quaternion: computeOrientation(this.leftLandmarks),
+        connected: true 
+      })
     }
     if (this.rightDetected) {
-      sensorStore.updateRightHand({ flex: computeFlex(this.rightLandmarks), connected: true })
+      sensorStore.updateRightHand({ 
+        flex: computeFlex(this.rightLandmarks),
+        quaternion: computeOrientation(this.rightLandmarks),
+        connected: true 
+      })
     }
   }
 
@@ -456,6 +486,14 @@ class HandTrackerService {
 
   isDetected(side) {
     return side === 'left' ? this.leftDetected : this.rightDetected
+  }
+
+  getVideoElement() {
+    return this.videoElement
+  }
+
+  get2DLandmarks(side) {
+    return side === 'left' ? this.left2D : this.right2D
   }
 }
 

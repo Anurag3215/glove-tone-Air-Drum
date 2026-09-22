@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { CyberSpaceGrid } from './Hand3D'
 import useSensorStore from '../store/sensorStore'
 import useSettingsStore from '../store/settingsStore'
+import { handTrackerService, useHandTrackerStore } from '../utils/handTracker'
 import './CalibrationScreen.css'
 
 // 5 Drum zones to calibrate per hand
@@ -100,8 +101,9 @@ function playDrumSound(type) {
   }
 }
 
-// 3D Pure Wireframe Hand Mesh in Matrix
-function MatrixWireframeHand({ activeHand }) {
+// 3D Pure Wireframe Hand Mesh in Matrix (Supports Optical Camera Tracking & Glove Sensors)
+function MatrixWireframeHand({ activeHand, isCameraActive }) {
+  const rootGroupRef = useRef()
   const pivotRef = useRef()
   const modelRef = useRef()
   const { scene } = useGLTF('/model/hand.glb')
@@ -129,24 +131,207 @@ function MatrixWireframeHand({ activeHand }) {
   }, [scene])
 
   useFrame(() => {
-    const state = useSensorStore.getState()
-    const target = activeHand === 'LEFT' ? state.leftHand : state.rightHand
-    if (pivotRef.current && target?.quaternion) {
-      const q = target.quaternion
-      pivotRef.current.quaternion.slerp(new THREE.Quaternion(q.x, q.y, q.z, q.w), 0.2)
+    const side = activeHand === 'LEFT' ? 'left' : 'right'
+    const isOptical = isCameraActive && handTrackerService.isDetected(side)
+
+    if (isOptical) {
+      const lm = handTrackerService.getLandmarks(side)
+
+      // 60 FPS Optical Hand Orientation directly from MediaPipe landmarks
+      const yaw = -(lm[27] - lm[0]) * 0.95
+      const pitch = (lm[28] - lm[1] - 1.10) * 0.85
+      const roll = (lm[16] - lm[52]) * 0.85
+      const euler = new THREE.Euler(pitch, yaw, roll, 'XYZ')
+      const opticalQuat = new THREE.Quaternion().setFromEuler(euler)
+
+      if (pivotRef.current) {
+        pivotRef.current.quaternion.slerp(opticalQuat, 0.25)
+      }
+
+      // 60 FPS Optical Spatial Aim Drift towards drums
+      if (rootGroupRef.current) {
+        const driftX = (lm[0] || 0) * 1.0
+        const driftY = ((lm[1] + 1.25) || 0) * 0.5
+        const driftZ = (lm[2] || 0) * 0.7
+        const baseX = activeHand === 'LEFT' ? -0.25 : 0.25
+        rootGroupRef.current.position.lerp(
+          new THREE.Vector3(baseX + driftX, -0.5 + driftY, 0.8 + driftZ),
+          0.18
+        )
+      }
+    } else {
+      // Glove hardware / mock sensor fallback
+      const state = useSensorStore.getState()
+      const target = activeHand === 'LEFT' ? state.leftHand : state.rightHand
+      if (rootGroupRef.current) {
+        rootGroupRef.current.position.lerp(new THREE.Vector3(0, -0.5, 0.8), 0.12)
+      }
+      if (pivotRef.current && target?.quaternion) {
+        const q = target.quaternion
+        pivotRef.current.quaternion.slerp(new THREE.Quaternion(q.x, q.y, q.z, q.w), 0.2)
+      }
     }
   })
 
   const scale = activeHand === 'LEFT' ? [-0.045, 0.045, 0.045] : [0.045, 0.045, 0.045]
 
   return (
-    <group position={[0, -0.5, 0.8]}>
+    <group ref={rootGroupRef} position={[0, -0.5, 0.8]}>
       <group ref={pivotRef}>
         <group ref={modelRef} scale={scale}>
           <primitive object={handScene} />
         </group>
       </group>
     </group>
+  )
+}
+
+// 2D Cybernetic Optical Tracking HUD with Skeleton Overlay
+function OpticalPreviewHUD({ isCameraActive, fps, status }) {
+  const canvasRef = useRef(null)
+  const animRef = useRef(null)
+  const [isMinimized, setIsMinimized] = useState(false)
+
+  useEffect(() => {
+    if (!isCameraActive || isMinimized) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    const width = canvas.width
+    const height = canvas.height
+
+    const BONES = [
+      [0, 1], [1, 2], [2, 3], [3, 4],
+      [0, 5], [5, 6], [6, 7], [7, 8],
+      [0, 9], [9, 10], [10, 11], [11, 12],
+      [0, 13], [13, 14], [14, 15], [15, 16],
+      [0, 17], [17, 18], [18, 19], [19, 20],
+      [5, 9], [9, 13], [13, 17]
+    ]
+
+    const renderLoop = () => {
+      ctx.clearRect(0, 0, width, height)
+
+      // Draw mirrored video element
+      const video = handTrackerService.getVideoElement()
+      if (video && video.readyState >= 2) {
+        ctx.save()
+        ctx.translate(width, 0)
+        ctx.scale(-1, 1)
+        ctx.drawImage(video, 0, 0, width, height)
+        // Cybernetic subtle dark grid tint
+        ctx.fillStyle = 'rgba(0, 15, 25, 0.4)'
+        ctx.fillRect(0, 0, width, height)
+        ctx.restore()
+      } else {
+        ctx.fillStyle = '#070b12'
+        ctx.fillRect(0, 0, width, height)
+        ctx.fillStyle = '#6C7A8E'
+        ctx.font = '9px Roboto Mono, monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText('CAMERA STREAM READY', width / 2, height / 2)
+      }
+
+      // Draw tracked hand skeletons
+      const drawHandSkeleton = (landmarks, color, tipColor) => {
+        if (!landmarks || landmarks.length < 21) return
+
+        const toScreen = (pt) => ({
+          x: (1.0 - pt.x) * width,
+          y: pt.y * height
+        })
+
+        // Bones
+        ctx.strokeStyle = color
+        ctx.lineWidth = 1.6
+        ctx.beginPath()
+        for (const [iA, iB] of BONES) {
+          const pA = toScreen(landmarks[iA])
+          const pB = toScreen(landmarks[iB])
+          ctx.moveTo(pA.x, pA.y)
+          ctx.lineTo(pB.x, pB.y)
+        }
+        ctx.stroke()
+
+        // Joints & Tips
+        for (let i = 0; i < 21; i++) {
+          const p = toScreen(landmarks[i])
+          const isTip = [4, 8, 12, 16, 20].includes(i)
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, isTip ? 3.0 : 1.8, 0, Math.PI * 2)
+          ctx.fillStyle = isTip ? tipColor : color
+          ctx.fill()
+          if (isTip) {
+            ctx.strokeStyle = '#FFFFFF'
+            ctx.lineWidth = 0.8
+            ctx.stroke()
+          }
+        }
+      }
+
+      const left2D = handTrackerService.get2DLandmarks('left')
+      const right2D = handTrackerService.get2DLandmarks('right')
+
+      drawHandSkeleton(left2D, '#00f3ff', '#00ff9d')
+      drawHandSkeleton(right2D, '#a855f7', '#00ff9d')
+
+      animRef.current = requestAnimationFrame(renderLoop)
+    }
+
+    animRef.current = requestAnimationFrame(renderLoop)
+
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current)
+    }
+  }, [isCameraActive, isMinimized])
+
+  if (!isCameraActive) return null
+
+  const leftActive = handTrackerService.isDetected('left')
+  const rightActive = handTrackerService.isDetected('right')
+
+  return (
+    <div className={`matrix-optical-hud ${isMinimized ? 'minimized' : ''}`}>
+      <div className="optical-hud-header">
+        <div className="optical-hud-title-wrap">
+          <span className="optical-hud-live-dot" />
+          <span className="optical-hud-title">OPTICAL TRACKING</span>
+          <span className="optical-hud-fps">{fps} FPS</span>
+        </div>
+        <button 
+          className="optical-hud-min-btn" 
+          onClick={() => setIsMinimized(!isMinimized)}
+          title={isMinimized ? 'Expand Camera View' : 'Minimize Camera View'}
+        >
+          {isMinimized ? '▲' : '▼'}
+        </button>
+      </div>
+
+      {!isMinimized && (
+        <>
+          <div className="optical-hud-body">
+            <canvas 
+              ref={canvasRef} 
+              width={180} 
+              height={135} 
+              className="optical-hud-canvas" 
+            />
+            <div className="optical-hud-reticle-tl" />
+            <div className="optical-hud-reticle-br" />
+          </div>
+
+          <div className="optical-hud-status-strip">
+            <span className={`hud-hand-tag ${leftActive ? 'active' : ''}`}>
+              LEFT: {leftActive ? 'LOCKED' : 'SEEKING'}
+            </span>
+            <span className={`hud-hand-tag ${rightActive ? 'active' : ''}`}>
+              RIGHT: {rightActive ? 'LOCKED' : 'SEEKING'}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -230,6 +415,21 @@ function CalibrationScreen() {
   const [currentStepIndex, setCurrentStepIndex] = useState(2) // Default Snare
   const airDrumMode = useSettingsStore((state) => state.airDrumMode || 'hybrid')
   const setAirDrumMode = useSettingsStore((state) => state.setAirDrumMode)
+
+  // Camera tracking store hooks
+  const isCameraActive = useHandTrackerStore((state) => state.isCameraActive)
+  const camStatus = useHandTrackerStore((state) => state.status)
+  const camFps = useHandTrackerStore((state) => state.fps)
+  const handsDetected = useHandTrackerStore((state) => state.handsDetected)
+  const toggleCamera = useHandTrackerStore((state) => state.toggleCamera)
+
+  // Stop camera when unmounting calibration module
+  useEffect(() => {
+    return () => {
+      handTrackerService.stopCamera()
+    }
+  }, [])
+
   const [calibratedMap, setCalibratedMap] = useState({
     LEFT: { kick: true, tom: true, snare: true, hihat: false, crash: false },
     RIGHT: { kick: false, tom: false, snare: false, hihat: false, crash: false }
@@ -304,6 +504,23 @@ function CalibrationScreen() {
           <span className="matrix-pill">3D MESH MATRIX</span>
         </div>
 
+        {/* Optical Camera Tracking Toggle Button */}
+        <div className="matrix-camera-toggle">
+          <button 
+            className={`matrix-cam-btn ${isCameraActive ? 'active' : ''}`}
+            onClick={toggleCamera}
+            title="Toggle Optical Webcam Hand Tracking"
+          >
+            <span className={`matrix-cam-dot ${isCameraActive ? (handsDetected > 0 ? 'tracking' : 'on') : 'off'}`} />
+            <span className="matrix-cam-icon">📷</span>
+            <span className="matrix-cam-text">
+              {isCameraActive 
+                ? (camStatus === 'initializing' ? 'INITIALIZING...' : `CAMERA ON • ${camFps} FPS`) 
+                : 'CAMERA: OFF'}
+            </span>
+          </button>
+        </div>
+
         {/* Air Drum Gesture Control Mode Option */}
         <div className="matrix-gesture-option">
           <span className="gesture-opt-label">GESTURE:</span>
@@ -342,6 +559,13 @@ function CalibrationScreen() {
         </div>
       </div>
 
+      {/* 2D OPTICAL SKELETON HUD PREVIEW */}
+      <OpticalPreviewHUD 
+        isCameraActive={isCameraActive}
+        fps={camFps}
+        status={camStatus}
+      />
+
       {/* 3D WIREFRAME MESH MATRIX CANVAS */}
       <div className="matrix-canvas-container">
         <Canvas
@@ -355,9 +579,9 @@ function CalibrationScreen() {
           {/* Perspective Moving Cyberspace Grid Floor */}
           <CyberSpaceGrid speed={1.2} />
 
-          {/* 3D Wireframe Hand in Matrix */}
+          {/* 3D Wireframe Hand in Matrix (Tracks optical camera or glove sensors) */}
           <Suspense fallback={null}>
-            <MatrixWireframeHand activeHand={activeHand} />
+            <MatrixWireframeHand activeHand={activeHand} isCameraActive={isCameraActive} />
           </Suspense>
 
           {/* 5 3D Wireframe Drums */}
