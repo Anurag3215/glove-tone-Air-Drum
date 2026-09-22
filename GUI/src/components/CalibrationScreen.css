@@ -579,3 +579,151 @@
   color: #00ff9d;
   text-shadow: 0 0 6px rgba(0, 255, 157, 0.6);
 }
+
+/* ==========================================================================
+   5-FINGER BEND AIR DRUM MAPPING BAR
+   ========================================================================== */
+.matrix-finger-bend-bar {
+  position: absolute;
+  bottom: 86px;
+  left: 20px;
+  right: 20px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(8, 12, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 16px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.finger-bend-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.bend-header-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00f3ff;
+  box-shadow: 0 0 8px #00f3ff;
+}
+
+.bend-header-title {
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'Roboto Mono', monospace;
+  color: #8E9BAE;
+  letter-spacing: 0.08em;
+}
+
+.finger-bend-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.finger-bend-chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.finger-bend-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--chip-color);
+}
+
+.finger-bend-chip.active-zone {
+  border-color: rgba(0, 243, 255, 0.35);
+  background: rgba(0, 243, 255, 0.04);
+}
+
+.finger-bend-chip.hit {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #FFFFFF;
+  box-shadow: 0 0 16px var(--chip-color);
+  transform: translateY(-2px);
+}
+
+.chip-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.chip-finger {
+  font-size: 8.5px;
+  font-weight: 800;
+  font-family: 'Roboto Mono', monospace;
+  color: #A0AEC0;
+  letter-spacing: 0.04em;
+}
+
+.chip-arrow {
+  font-size: 8px;
+  color: #555555;
+}
+
+.chip-drum {
+  font-size: 10px;
+  font-weight: 900;
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 0.06em;
+}
+
+.chip-meter-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.chip-meter-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.08s ease, background-color 0.1s ease;
+}
+
+.chip-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chip-pct {
+  font-size: 8px;
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  color: #6C7A8E;
+}
+
+.finger-bend-chip.hit .chip-pct {
+  color: #FFFFFF;
+  font-weight: 900;
+}
+
+.chip-hit-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+  animation: dot-pulse 0.8s infinite ease-in-out;
+}

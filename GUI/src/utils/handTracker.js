@@ -299,8 +299,8 @@ class HandTrackerService {
       this.blendCanonical('right', now)
     }
 
-    // Throttled React Zustand store update (10 Hz = every 100ms) to eliminate React re-render lag
-    if (now - this.lastZustandUpdate >= 100) {
+    // Throttled React Zustand store update (40 Hz = every 25ms) for ultra-low latency air drum triggers
+    if (now - this.lastZustandUpdate >= 25) {
       this.lastZustandUpdate = now
       this.dispatchThrottledZustand(now)
     }
@@ -409,7 +409,7 @@ class HandTrackerService {
       this.blendCanonical('right', now)
     }
 
-    if (now - this.lastZustandUpdate >= 100) {
+    if (now - this.lastZustandUpdate >= 25) {
       this.lastZustandUpdate = now
       this.dispatchThrottledZustand(now)
     }
