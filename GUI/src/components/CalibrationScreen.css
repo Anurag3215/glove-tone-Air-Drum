@@ -73,6 +73,54 @@
   letter-spacing: 0.08em;
 }
 
+.matrix-gesture-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 14, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 12px;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+.gesture-opt-label {
+  font-size: 9px;
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 800;
+  color: #777777;
+  letter-spacing: 0.08em;
+}
+
+.gesture-opt-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.gesture-opt-btn:hover {
+  background: rgba(0, 243, 255, 0.1);
+}
+
+.gesture-opt-icon {
+  font-size: 13px;
+}
+
+.gesture-opt-text {
+  font-size: 11px;
+  font-weight: 800;
+  font-family: 'Roboto Mono', monospace;
+  color: #00f3ff;
+  letter-spacing: 0.05em;
+}
+
 .matrix-hand-toggle {
   display: flex;
   background: rgba(10, 14, 22, 0.85);

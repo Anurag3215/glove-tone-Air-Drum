@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import HolographicHand, { CyberSpaceGrid, HAND_STYLES, HOLOGRAM_DESIGNS } from './Hand3D'
-import WireframeDrumKit from './WireframeDrumKit'
 import useSensorStore from '../store/sensorStore'
 import useSettingsStore from '../store/settingsStore'
 import {
@@ -84,10 +83,6 @@ function HandsPanel({ onToggleTracks, isTracksOpen }) {
   const setBloomIntensity = useSettingsStore((state) => state.setBloomIntensity)
   const glowIntensity = useSettingsStore((state) => state.glowIntensity ?? 2.0)
   const setGlowIntensity = useSettingsStore((state) => state.setGlowIntensity)
-  const showDrumKit = useSettingsStore((state) => state.showDrumKit ?? true)
-  const setShowDrumKit = useSettingsStore((state) => state.setShowDrumKit)
-  const airDrumMode = useSettingsStore((state) => state.airDrumMode || 'hybrid')
-  const setAirDrumMode = useSettingsStore((state) => state.setAirDrumMode)
 
   // Calibrated thresholds
   const thresholdsL = { thumb: 350, index: 350, middle: 350, ring: 550, pinky: 650 }
@@ -141,34 +136,6 @@ function HandsPanel({ onToggleTracks, isTracksOpen }) {
             <span className={`color-pip ${handStyle}`} />
             <span className="style-trigger-val">
               {HOLOGRAM_DESIGNS[hologramDesign]?.shortName || 'WIREFRAME'} • {currentPalette.name}
-            </span>
-          </button>
-
-          {/* 3D Wireframe Drum Rig Toggle Option */}
-          <button
-            type="button"
-            className={`drum-rig-toggle-btn ${showDrumKit ? 'active' : ''}`}
-            onClick={() => setShowDrumKit(!showDrumKit)}
-            title="Toggle 3D Wireframe Drum Kit Matrix"
-          >
-            <span>🥁 3D DRUMS:</span>
-            <span className={`btn-state-chip ${showDrumKit ? 'on' : 'off'}`}>{showDrumKit ? 'ON' : 'OFF'}</span>
-          </button>
-
-          {/* Air Drum Gesture Mode Option */}
-          <button
-            type="button"
-            className="gesture-mode-btn"
-            onClick={() => {
-              const modes = ['hybrid', 'fingers', 'kinetic']
-              const nextIdx = (modes.indexOf(airDrumMode) + 1) % modes.length
-              setAirDrumMode(modes[nextIdx])
-            }}
-            title="Switch Air Drum Gesture Control Mode (Spatial Aim + Tap, Direct Fingers, or Kinetic Strike)"
-          >
-            <span className="mode-btn-lbl">GESTURE:</span>
-            <span className="mode-btn-val">
-              {airDrumMode === 'hybrid' ? 'AIM + TAP' : airDrumMode === 'fingers' ? 'DIRECT FINGERS' : 'AIR STRIKE'}
             </span>
           </button>
 
@@ -264,9 +231,6 @@ function HandsPanel({ onToggleTracks, isTracksOpen }) {
           
           {/* 3D Space Cyberpunk Grid in Black & White (Moving Forward) */}
           <CyberSpaceGrid speed={3.5} />
-          
-          {/* 3D Wireframe Mesh Matrix Drum Kit (Air Drum Live Performance) */}
-          {showDrumKit && <WireframeDrumKit />}
           
           {/* 3D Wireframe Hands floating in Cyber Space */}
           {activeHandTab === 'both' && (

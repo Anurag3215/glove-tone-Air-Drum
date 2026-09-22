@@ -4,6 +4,7 @@ import { OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { CyberSpaceGrid } from './Hand3D'
 import useSensorStore from '../store/sensorStore'
+import useSettingsStore from '../store/settingsStore'
 import './CalibrationScreen.css'
 
 // 5 Drum zones to calibrate per hand
@@ -227,6 +228,8 @@ function MatrixDrumPad({ zone, isActive, isCalibrated, onSelect }) {
 function CalibrationScreen() {
   const [activeHand, setActiveHand] = useState('LEFT')
   const [currentStepIndex, setCurrentStepIndex] = useState(2) // Default Snare
+  const airDrumMode = useSettingsStore((state) => state.airDrumMode || 'hybrid')
+  const setAirDrumMode = useSettingsStore((state) => state.setAirDrumMode)
   const [calibratedMap, setCalibratedMap] = useState({
     LEFT: { kick: true, tom: true, snare: true, hihat: false, crash: false },
     RIGHT: { kick: false, tom: false, snare: false, hihat: false, crash: false }
@@ -299,6 +302,27 @@ function CalibrationScreen() {
           <span className="matrix-dot"></span>
           <span className="matrix-title">DRUM CALIBRATION</span>
           <span className="matrix-pill">3D MESH MATRIX</span>
+        </div>
+
+        {/* Air Drum Gesture Control Mode Option */}
+        <div className="matrix-gesture-option">
+          <span className="gesture-opt-label">GESTURE:</span>
+          <button 
+            className="gesture-opt-btn"
+            onClick={() => {
+              const modes = ['hybrid', 'fingers', 'kinetic']
+              const nextIdx = (modes.indexOf(airDrumMode) + 1) % modes.length
+              setAirDrumMode(modes[nextIdx])
+            }}
+            title="Switch Air Drum Gesture Mode (Spatial Aim + Finger Tap, Direct Fingers, or Kinetic Strike)"
+          >
+            <span className="gesture-opt-icon">
+              {airDrumMode === 'hybrid' ? '🎯' : airDrumMode === 'fingers' ? '🖐️' : '⚡'}
+            </span>
+            <span className="gesture-opt-text">
+              {airDrumMode === 'hybrid' ? 'AIM + FINGER TAP' : airDrumMode === 'fingers' ? 'DIRECT FINGERS (1:1)' : 'KINETIC AIR STRIKE'}
+            </span>
+          </button>
         </div>
 
         {/* Hand Switcher */}
