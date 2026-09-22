@@ -6,61 +6,70 @@ function Header({ currentView, onViewChange }) {
   const leftConnected = useSensorStore((state) => state.leftHand.connected)
   const rightConnected = useSensorStore((state) => state.rightHand.connected)
   const leftRate = useSensorStore((state) => state.leftHand.sampleRate)
-  const rightRate = useSensorStore((state) => state.rightHand.sampleRate)
+  
+  const isOnline = leftConnected || rightConnected
   
   return (
-    <header className="header-minimal">
+    <header className="header-cyber">
       {/* Left: Brand */}
-      <div className="header-brand-minimal">
+      <div className="header-brand">
         <span className="brand-name">GLOVETONE</span>
         <span className="brand-version">v1.0</span>
       </div>
       
       {/* Center: Navigation */}
-      <nav className="header-nav-minimal">
+      <nav className="header-nav" role="tablist">
         <button
-          className={`nav-item ${currentView === 'home' ? 'active' : ''}`}
+          role="tab"
+          aria-selected={currentView === 'home'}
+          className={`nav-btn ${currentView === 'home' ? 'active' : ''}`}
           onClick={() => onViewChange('home')}
         >
-          Home
+          HOME
         </button>
         <button
-          className={`nav-item ${currentView === 'calibrate' ? 'active' : ''}`}
+          role="tab"
+          aria-selected={currentView === 'calibrate'}
+          className={`nav-btn ${currentView === 'calibrate' ? 'active' : ''}`}
           onClick={() => onViewChange('calibrate')}
         >
-          Calibrate
+          CALIBRATE
         </button>
         <button
-          className={`nav-item ${currentView === 'settings' ? 'active' : ''}`}
+          role="tab"
+          aria-selected={currentView === 'settings'}
+          className={`nav-btn ${currentView === 'settings' ? 'active' : ''}`}
           onClick={() => onViewChange('settings')}
         >
-          Settings
+          SETTINGS
         </button>
       </nav>
       
-      {/* Right: System Stats */}
-      <div className="header-stats">
-        <div className="stat-group">
-          <span className="stat-label">HANDS</span>
-          <div className="stat-indicators">
-            <span className={`indicator ${leftConnected ? 'on' : 'off'}`}>L</span>
-            <span className={`indicator ${rightConnected ? 'on' : 'off'}`}>R</span>
-          </div>
+      {/* Right: System Telemetry */}
+      <div className="header-status">
+        {/* System Online Badge */}
+        <div className="status-pill online-indicator">
+          <span className={`status-dot-pulse ${isOnline ? 'online' : 'offline'}`} />
+          <span className="status-pill-text">{isOnline ? 'SYSTEM ONLINE' : 'SYSTEM OFFLINE'}</span>
         </div>
-        
-        <div className="stat-group">
-          <span className="stat-label">RATE</span>
-          <span className="stat-value">{leftRate}Hz</span>
+
+        {/* Hand Gloves L / R */}
+        <div className="glove-badges">
+          <span className={`glove-badge ${leftConnected ? 'on' : 'off'}`} title="Left Glove">L</span>
+          <span className={`glove-badge ${rightConnected ? 'on' : 'off'}`} title="Right Glove">R</span>
         </div>
-        
-        <div className="stat-group">
-          <span className="stat-label">CPU</span>
-          <span className="stat-value">24%</span>
+
+        {/* Live Metrics */}
+        <div className="header-metric">
+          <span className="metric-val">{leftRate || 60}Hz</span>
         </div>
-        
-        <div className="stat-group">
-          <span className="stat-label">LAT</span>
-          <span className="stat-value">5ms</span>
+
+        <div className="header-metric">
+          <span className="metric-val">24% CPU</span>
+        </div>
+
+        <div className="header-metric">
+          <span className="metric-val">5ms LATENCY</span>
         </div>
       </div>
     </header>

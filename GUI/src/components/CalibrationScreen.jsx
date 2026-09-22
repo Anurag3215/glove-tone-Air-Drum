@@ -1,353 +1,440 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useRef, useState, useEffect, useMemo, Suspense } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { OrbitControls, useGLTF } from '@react-three/drei'
+import * as THREE from 'three'
+import { CyberSpaceGrid } from './Hand3D'
 import useSensorStore from '../store/sensorStore'
 import './CalibrationScreen.css'
 
-const CALIBRATION_MODES = [
-  { id: 'W', name: 'Wakanda Poses', description: 'Calibrate 3 controller poses for gesture detection', steps: 3, category: 'Pose Detection' },
-  { id: 'D', name: 'Drum Zones', description: 'Calibrate 10 drum hit positions (5 per hand)', steps: 10, category: 'Spatial Mapping' },
-  { id: 'V', name: 'Violin Zones', description: 'Calibrate 5 violin positions for pitch control', steps: 5, category: 'Spatial Mapping' },
-  { id: 'K', name: 'Keys Zones', description: 'Calibrate 6 pitch positions for keyboard play', steps: 6, category: 'Spatial Mapping' },
-]
-
-const POSE_STEPS = [
-  { name: 'Neutral Pose', instruction: 'Hold both hands in relaxed neutral position', hand: 'BOTH' },
-  { name: 'Left Wakanda', instruction: 'Cross arms, LEFT hand forward (Wakanda pose)', hand: 'LEFT', countdown: 5 },
-  { name: 'Right Wakanda', instruction: 'Cross arms, RIGHT hand forward (Wakanda pose)', hand: 'RIGHT', countdown: 5 },
-]
-
+// 5 Drum zones to calibrate per hand
 const DRUM_ZONES = [
-  { id: 1, hand: 'LEFT', position: 'Left Outer', sound: 'Kick Drum' },
-  { id: 2, hand: 'LEFT', position: 'Left Inner', sound: 'Tom' },
-  { id: 3, hand: 'LEFT', position: 'Waist Center', sound: 'Snare' },
-  { id: 4, hand: 'LEFT', position: 'Right Inner', sound: 'Hi-Hat' },
-  { id: 5, hand: 'LEFT', position: 'Right Outer', sound: 'Crash Cymbal' },
-  { id: 6, hand: 'RIGHT', position: 'Left Outer', sound: 'Kick Drum' },
-  { id: 7, hand: 'RIGHT', position: 'Left Inner', sound: 'Tom' },
-  { id: 8, hand: 'RIGHT', position: 'Waist Center', sound: 'Snare' },
-  { id: 9, hand: 'RIGHT', position: 'Right Inner', sound: 'Hi-Hat' },
-  { id: 10, hand: 'RIGHT', position: 'Right Outer', sound: 'Crash Cymbal' },
+  { id: 'kick', name: 'KICK', position: 'Left Outer', color: '#00f3ff', pos3d: [-2.6, -0.65, 0.4], rot3d: [0.1, 0.3, 0], radius: 0.65, height: 0.5 },
+  { id: 'tom', name: 'TOM', position: 'Left Inner', color: '#f59e0b', pos3d: [-1.4, 0.25, -0.4], rot3d: [0.25, 0.2, 0], radius: 0.48, height: 0.4 },
+  { id: 'snare', name: 'SNARE', position: 'Center', color: '#00ff9d', pos3d: [0.0, -0.45, 0.6], rot3d: [0.08, 0, 0], radius: 0.58, height: 0.35 },
+  { id: 'hihat', name: 'HI-HAT', position: 'Right Inner', color: '#ec4899', pos3d: [1.4, 0.35, -0.4], rot3d: [-0.15, -0.15, 0], radius: 0.55, height: 0.08, isCymbal: true },
+  { id: 'crash', name: 'CRASH', position: 'Right Outer', color: '#a855f7', pos3d: [2.6, 0.65, 0.3], rot3d: [-0.25, -0.3, 0], radius: 0.68, height: 0.08, isCymbal: true },
 ]
 
-const VIOLIN_ZONES = [
-  { id: 1, position: 'Neutral', instruction: 'Hold LEFT hand at center position' },
-  { id: 2, position: 'Flats', instruction: 'Tilt LEFT hand to the left' },
-  { id: 3, position: 'Sharps', instruction: 'Tilt LEFT hand to the right' },
-  { id: 4, position: 'Octave Up', instruction: 'Roll LEFT hand thumb-side up' },
-  { id: 5, position: 'Octave Down', instruction: 'Roll LEFT hand pinky-side up' },
-]
+// Synthesized drum audio feedback
+function playDrumSound(type) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+    const now = ctx.currentTime
 
-const KEYS_ZONES = [
-  { id: 1, hand: 'LEFT', position: 'Neutral', instruction: 'Hold LEFT hand at neutral height' },
-  { id: 2, hand: 'LEFT', position: 'Up', instruction: 'Raise LEFT hand up' },
-  { id: 3, hand: 'LEFT', position: 'Down', instruction: 'Lower LEFT hand down' },
-  { id: 4, hand: 'RIGHT', position: 'Neutral', instruction: 'Hold RIGHT hand at neutral height' },
-  { id: 5, hand: 'RIGHT', position: 'Up', instruction: 'Raise RIGHT hand up' },
-  { id: 6, hand: 'RIGHT', position: 'Down', instruction: 'Lower RIGHT hand down' },
-]
+    if (type === 'KICK') {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.frequency.setValueAtTime(140, now)
+      osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.35)
+      gain.gain.setValueAtTime(1, now)
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(now)
+      osc.stop(now + 0.35)
+    } else if (type === 'SNARE') {
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.18, ctx.sampleRate)
+      const out = buf.getChannelData(0)
+      for (let i = 0; i < buf.length; i++) out[i] = Math.random() * 2 - 1
+      const noise = ctx.createBufferSource()
+      noise.buffer = buf
+      const filter = ctx.createBiquadFilter()
+      filter.type = 'highpass'
+      filter.frequency.value = 900
+      const gain = ctx.createGain()
+      gain.gain.setValueAtTime(0.7, now)
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18)
+      noise.connect(filter)
+      filter.connect(gain)
+      gain.connect(ctx.destination)
+      noise.start(now)
+    } else if (type === 'HI-HAT') {
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.07, ctx.sampleRate)
+      const out = buf.getChannelData(0)
+      for (let i = 0; i < buf.length; i++) out[i] = Math.random() * 2 - 1
+      const noise = ctx.createBufferSource()
+      noise.buffer = buf
+      const filter = ctx.createBiquadFilter()
+      filter.type = 'highpass'
+      filter.frequency.value = 8000
+      const gain = ctx.createGain()
+      gain.gain.setValueAtTime(0.5, now)
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07)
+      noise.connect(filter)
+      filter.connect(gain)
+      gain.connect(ctx.destination)
+      noise.start(now)
+    } else if (type === 'TOM') {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.frequency.setValueAtTime(200, now)
+      osc.frequency.exponentialRampToValueAtTime(45, now + 0.3)
+      gain.gain.setValueAtTime(0.9, now)
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(now)
+      osc.stop(now + 0.3)
+    } else if (type === 'CRASH') {
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate)
+      const out = buf.getChannelData(0)
+      for (let i = 0; i < buf.length; i++) out[i] = Math.random() * 2 - 1
+      const noise = ctx.createBufferSource()
+      noise.buffer = buf
+      const filter = ctx.createBiquadFilter()
+      filter.type = 'bandpass'
+      filter.frequency.value = 5500
+      const gain = ctx.createGain()
+      gain.gain.setValueAtTime(0.8, now)
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6)
+      noise.connect(filter)
+      filter.connect(gain)
+      gain.connect(ctx.destination)
+      noise.start(now)
+    }
+  } catch {
+    // Audio fallback
+  }
+}
+
+// 3D Pure Wireframe Hand Mesh in Matrix
+function MatrixWireframeHand({ activeHand }) {
+  const pivotRef = useRef()
+  const modelRef = useRef()
+  const { scene } = useGLTF('/model/hand.glb')
+  
+  const handScene = useMemo(() => {
+    const cloned = scene.clone()
+    const box = new THREE.Box3().setFromObject(cloned)
+    const center = box.getCenter(new THREE.Vector3())
+    cloned.position.set(-center.x, -center.y, -center.z)
+
+    const wireMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color('#00f3ff'),
+      wireframe: true,
+      transparent: true,
+      opacity: 0.92,
+      side: THREE.FrontSide,
+    })
+
+    cloned.traverse((child) => {
+      if (child.isMesh) {
+        child.material = wireMat
+      }
+    })
+    return cloned
+  }, [scene])
+
+  useFrame(() => {
+    const state = useSensorStore.getState()
+    const target = activeHand === 'LEFT' ? state.leftHand : state.rightHand
+    if (pivotRef.current && target?.quaternion) {
+      const q = target.quaternion
+      pivotRef.current.quaternion.slerp(new THREE.Quaternion(q.x, q.y, q.z, q.w), 0.2)
+    }
+  })
+
+  const scale = activeHand === 'LEFT' ? [-0.045, 0.045, 0.045] : [0.045, 0.045, 0.045]
+
+  return (
+    <group position={[0, -0.5, 0.8]}>
+      <group ref={pivotRef}>
+        <group ref={modelRef} scale={scale}>
+          <primitive object={handScene} />
+        </group>
+      </group>
+    </group>
+  )
+}
+
+// 3D Wireframe Drum Pad in Matrix
+function MatrixDrumPad({ zone, isActive, isCalibrated, onSelect }) {
+  const groupRef = useRef()
+  const ringRef = useRef()
+  const [isHit, setIsHit] = useState(false)
+  const scaleRef = useRef(1.0)
+
+  const trigger = (e) => {
+    if (e) e.stopPropagation()
+    scaleRef.current = 1.3
+    setIsHit(true)
+    playDrumSound(zone.name)
+    onSelect(zone)
+    setTimeout(() => {
+      scaleRef.current = 1.0
+      setIsHit(false)
+    }, 200)
+  }
+
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      const targetScale = isActive ? (1.1 + Math.sin(Date.now() * 0.005) * 0.05) : scaleRef.current
+      groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), delta * 12)
+    }
+    if (ringRef.current && isActive) {
+      ringRef.current.rotation.z += delta * 1.2
+    }
+  })
+
+  const currentColor = isHit ? '#FFFFFF' : isActive ? '#00f3ff' : isCalibrated ? '#00ff9d' : zone.color
+
+  return (
+    <group 
+      ref={groupRef} 
+      position={zone.pos3d} 
+      rotation={zone.rot3d} 
+      onClick={trigger}
+    >
+      {/* 3D Wireframe Mesh Cylinder/Cymbal */}
+      <mesh>
+        {zone.isCymbal ? (
+          <coneGeometry args={[zone.radius, zone.height, 18, 2, true]} />
+        ) : (
+          <cylinderGeometry args={[zone.radius, zone.radius * 0.95, zone.height, 18, 4, true]} />
+        )}
+        <meshBasicMaterial 
+          color={currentColor} 
+          wireframe 
+          transparent 
+          opacity={isActive ? 1.0 : isCalibrated ? 0.85 : 0.6} 
+        />
+      </mesh>
+
+      {/* Wireframe Head / Concentric Rim */}
+      <mesh position={[0, zone.isCymbal ? 0 : zone.height / 2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[zone.radius * 0.25, zone.radius, 18, 2]} />
+        <meshBasicMaterial 
+          color={currentColor} 
+          wireframe 
+          transparent 
+          opacity={isActive ? 1.0 : 0.6} 
+        />
+      </mesh>
+
+      {/* Active Targeting Wireframe Aura */}
+      {isActive && (
+        <mesh ref={ringRef} position={[0, zone.isCymbal ? 0 : zone.height / 2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[zone.radius * 1.15, zone.radius * 1.25, 24]} />
+          <meshBasicMaterial color="#00f3ff" wireframe transparent opacity={0.8} />
+        </mesh>
+      )}
+    </group>
+  )
+}
 
 function CalibrationScreen() {
-  const [selectedMode, setSelectedMode] = useState(null)
-  const [currentStep, setCurrentStep] = useState(0)
+  const [activeHand, setActiveHand] = useState('LEFT')
+  const [currentStepIndex, setCurrentStepIndex] = useState(2) // Default Snare
+  const [calibratedMap, setCalibratedMap] = useState({
+    LEFT: { kick: true, tom: true, snare: true, hihat: false, crash: false },
+    RIGHT: { kick: false, tom: false, snare: false, hihat: false, crash: false }
+  })
   const [countdown, setCountdown] = useState(0)
   const [isCapturing, setIsCapturing] = useState(false)
-  const [capturedSteps, setCapturedSteps] = useState([])
-  const [capturedData, setCapturedData] = useState([])
-  
-  // Get live sensor data
-  const leftHand = useSensorStore((state) => state.leftHand)
-  const rightHand = useSensorStore((state) => state.rightHand)
-  
-  // Calculate stability (how still the hand is)
-  const [stability, setStability] = useState(0)
-  const [prevQuat, setPrevQuat] = useState(null)
-  
+  const [stability, setStability] = useState(98)
+  const [lastQuat, setLastQuat] = useState(null)
+
+  const activeZone = DRUM_ZONES[currentStepIndex]
+  const currentHandCalibrated = calibratedMap[activeHand] || {}
+
+  // Calculate hand stability for active calibration
   useEffect(() => {
-    if (!isCapturing || countdown > 0) return
-    
-    const currentQuat = leftHand.quaternion
-    if (prevQuat) {
-      const diff = Math.abs(currentQuat.w - prevQuat.w) +
-                   Math.abs(currentQuat.x - prevQuat.x) +
-                   Math.abs(currentQuat.y - prevQuat.y) +
-                   Math.abs(currentQuat.z - prevQuat.z)
-      const newStability = Math.max(0, 100 - diff * 1000)
-      setStability(newStability)
-    }
-    setPrevQuat(currentQuat)
-  }, [leftHand.quaternion, isCapturing, countdown])
-  
-  const getCurrentStepData = useCallback(() => {
-    if (!selectedMode) return null
-    if (selectedMode.id === 'W') return POSE_STEPS[currentStep]
-    if (selectedMode.id === 'D') return DRUM_ZONES[currentStep]
-    if (selectedMode.id === 'V') return VIOLIN_ZONES[currentStep]
-    if (selectedMode.id === 'K') return KEYS_ZONES[currentStep]
-    return null
-  }, [selectedMode, currentStep])
-  
-  const handleCapture = useCallback(() => {
-    if (!selectedMode) return
-    
-    // Save captured data
-    const data = {
-      step: currentStep,
-      leftQuat: { ...leftHand.quaternion },
-      rightQuat: { ...rightHand.quaternion },
-      leftFlex: { ...leftHand.flex },
-      rightFlex: { ...rightHand.flex },
-    }
-    setCapturedData(prev => [...prev, data])
-    setCapturedSteps(prev => [...prev, currentStep])
-    
-    setTimeout(() => {
-      if (currentStep < selectedMode.steps - 1) {
-        setCurrentStep(currentStep + 1)
-        setIsCapturing(false)
-        setCountdown(0)
-        setStability(0)
-      } else {
-        alert(`${selectedMode.name} calibration complete!`)
-        setSelectedMode(null)
-        setCapturedSteps([])
-        setCurrentStep(0)
-        setCountdown(0)
-        setIsCapturing(false)
-        setCapturedData([])
+    const interval = setInterval(() => {
+      const state = useSensorStore.getState()
+      const hand = activeHand === 'LEFT' ? state.leftHand : state.rightHand
+      const q = hand.quaternion
+      if (lastQuat && q) {
+        const diff = Math.abs(q.w - lastQuat.w) + Math.abs(q.x - lastQuat.x) + Math.abs(q.y - lastQuat.y)
+        const stab = Math.min(100, Math.max(70, Math.round(100 - diff * 400)))
+        setStability(stab)
       }
-    }, 800)
-  }, [selectedMode, currentStep, leftHand, rightHand])
-  
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
-      return () => clearTimeout(timer)
-    } else if (countdown === 0 && isCapturing && !capturedSteps.includes(currentStep)) {
-      const timer = setTimeout(() => handleCapture(), 100)
-      return () => clearTimeout(timer)
-    }
-  }, [countdown, isCapturing, currentStep, capturedSteps, handleCapture])
-  
-  const handleModeSelect = (mode) => {
-    setSelectedMode(mode)
-    setCurrentStep(0)
-    setCountdown(0)
-    setIsCapturing(false)
-    setCapturedSteps([])
-    setCapturedData([])
-  }
-  
-  const handleStartStep = () => {
+      setLastQuat(q)
+    }, 150)
+    return () => clearInterval(interval)
+  }, [activeHand, lastQuat])
+
+  // Start countdown capture
+  const handleStartCapture = () => {
     setIsCapturing(true)
-    setStability(0)
-    const stepData = getCurrentStepData()
-    if (stepData?.countdown || (selectedMode && selectedMode.id !== 'W')) {
-      setCountdown(5)
-    } else {
-      setTimeout(() => handleCapture(), 500)
-    }
+    setCountdown(3)
   }
-  
-  const stepData = getCurrentStepData()
-  
-  if (!selectedMode) {
-    return (
-      <div className="cal-screen-pro">
-        <div className="cal-header-pro">
-          <h1>Calibration Protocol</h1>
-          <p>Select calibration mode to begin sensor configuration</p>
+
+  // Handle countdown
+  useEffect(() => {
+    if (!isCapturing) return
+
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 900)
+      return () => clearTimeout(timer)
+    }
+
+    if (countdown === 0) {
+      // Complete calibration for this zone
+      playDrumSound(activeZone.name)
+      setCalibratedMap(prev => ({
+        ...prev,
+        [activeHand]: {
+          ...prev[activeHand],
+          [activeZone.id]: true
+        }
+      }))
+
+      const timer = setTimeout(() => {
+        setIsCapturing(false)
+        if (currentStepIndex < DRUM_ZONES.length - 1) {
+          setCurrentStepIndex(currentStepIndex + 1)
+        }
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [countdown, isCapturing, currentStepIndex, activeHand, activeZone])
+
+  return (
+    <div className="cal-matrix-viewport">
+      {/* MINIMAL TOP BAR */}
+      <div className="matrix-topbar">
+        <div className="topbar-brand">
+          <span className="matrix-dot"></span>
+          <span className="matrix-title">DRUM CALIBRATION</span>
+          <span className="matrix-pill">3D MESH MATRIX</span>
         </div>
-        
-        <div className="cal-mode-cards">
-          {CALIBRATION_MODES.map(mode => (
-            <div key={mode.id} className="mode-card-pro" onClick={() => handleModeSelect(mode)}>
-              <div className="mode-category">{mode.category}</div>
-              <h3>{mode.name}</h3>
-              <p>{mode.description}</p>
-              <div className="mode-meta">
-                <span className="mode-steps">{mode.steps} steps</span>
-                <span className="mode-key">KEY: {mode.id}</span>
-              </div>
-            </div>
-          ))}
+
+        {/* Hand Switcher */}
+        <div className="matrix-hand-toggle">
+          <button 
+            className={`hand-btn ${activeHand === 'LEFT' ? 'active' : ''}`}
+            onClick={() => setActiveHand('LEFT')}
+          >
+            LEFT GLOVE
+          </button>
+          <button 
+            className={`hand-btn ${activeHand === 'RIGHT' ? 'active' : ''}`}
+            onClick={() => setActiveHand('RIGHT')}
+          >
+            RIGHT GLOVE
+          </button>
         </div>
       </div>
-    )
-  }
-  
-  return (
-    <div className="cal-screen-pro">
-      <button className="cal-back-btn" onClick={() => setSelectedMode(null)}>
-        ← Back
-      </button>
-      
-      <div className="cal-session-header">
-        <div className="session-title">
-          <h2>{selectedMode.name}</h2>
-          <span className="session-progress">Step {currentStep + 1} / {selectedMode.steps}</span>
-        </div>
-        <div className="session-progress-bar">
-          {[...Array(selectedMode.steps)].map((_, i) => (
-            <div 
-              key={i} 
-              className={`progress-segment ${i < currentStep ? 'completed' : i === currentStep ? 'active' : ''}`}
+
+      {/* 3D WIREFRAME MESH MATRIX CANVAS */}
+      <div className="matrix-canvas-container">
+        <Canvas
+          camera={{ position: [0, 2.0, 5.6], fov: 42 }}
+          dpr={[1, 1.5]}
+          gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
+        >
+          <color attach="background" args={['#000000']} />
+          <fog attach="fog" args={['#000000', 8, 28]} />
+
+          {/* Perspective Moving Cyberspace Grid Floor */}
+          <CyberSpaceGrid speed={1.2} />
+
+          {/* 3D Wireframe Hand in Matrix */}
+          <Suspense fallback={null}>
+            <MatrixWireframeHand activeHand={activeHand} />
+          </Suspense>
+
+          {/* 5 3D Wireframe Drums */}
+          {DRUM_ZONES.map((zone, idx) => (
+            <MatrixDrumPad
+              key={zone.id}
+              zone={zone}
+              isActive={idx === currentStepIndex}
+              isCalibrated={currentHandCalibrated[zone.id]}
+              onSelect={() => setCurrentStepIndex(idx)}
             />
           ))}
-        </div>
+
+          {/* Ambient Lighting */}
+          <ambientLight intensity={0.4} />
+          <pointLight position={[0, 4, 4]} intensity={0.8} color="#FFFFFF" />
+          <pointLight position={[-3, 2, 2]} intensity={0.6} color="#00f3ff" />
+          <pointLight position={[3, 2, 2]} intensity={0.6} color="#a855f7" />
+
+          {/* Orbit Controls to rotate matrix */}
+          <OrbitControls
+            enablePan={false}
+            minPolarAngle={Math.PI / 6}
+            maxPolarAngle={Math.PI / 2.1}
+            minDistance={3.8}
+            maxDistance={8.5}
+          />
+        </Canvas>
       </div>
-      
-      <div className="cal-workspace">
-        <div className="cal-step-list">
-          {selectedMode.id === 'W' && POSE_STEPS.map((step, i) => (
-            <div key={i} className={`step-item ${i === currentStep ? 'active' : i < currentStep ? 'completed' : ''}`}>
-              <div className="step-number">{i + 1}</div>
-              <div className="step-content">
-                <div className="step-name">{step.name}</div>
-                <div className="step-hand">{step.hand} HAND</div>
-              </div>
-            </div>
-          ))}
-          
-          {selectedMode.id === 'D' && DRUM_ZONES.map((zone, i) => (
-            <div key={i} className={`step-item ${i === currentStep ? 'active' : i < currentStep ? 'completed' : ''}`}>
-              <div className="step-number">{i + 1}</div>
-              <div className="step-content">
-                <div className="step-name">{zone.position}</div>
-                <div className="step-hand">{zone.hand} • {zone.sound}</div>
-              </div>
-            </div>
-          ))}
-          
-          {selectedMode.id === 'V' && VIOLIN_ZONES.map((zone, i) => (
-            <div key={i} className={`step-item ${i === currentStep ? 'active' : i < currentStep ? 'completed' : ''}`}>
-              <div className="step-number">{i + 1}</div>
-              <div className="step-content">
-                <div className="step-name">{zone.position}</div>
-              </div>
-            </div>
-          ))}
-          
-          {selectedMode.id === 'K' && KEYS_ZONES.map((zone, i) => (
-            <div key={i} className={`step-item ${i === currentStep ? 'active' : i < currentStep ? 'completed' : ''}`}>
-              <div className="step-number">{i + 1}</div>
-              <div className="step-content">
-                <div className="step-name">{zone.hand} {zone.position}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+
+      {/* MINIMAL CALIBRATION CONTROL STRIP */}
+      <div className="matrix-bottom-strip">
         
-        <div className="cal-main-area">
-          <div className="cal-instruction-panel">
-            <h3>{stepData?.name || stepData?.position}</h3>
-            <p className="instruction-text">{stepData?.instruction}</p>
-            {stepData?.hand && (
-              <div className="hand-indicator">
-                <span className="hand-badge">{stepData.hand} HAND</span>
-              </div>
-            )}
+        {/* Step Navigation & Active Target */}
+        <div className="active-zone-hud">
+          <button 
+            className="hud-nav-btn"
+            disabled={currentStepIndex === 0 || isCapturing}
+            onClick={() => setCurrentStepIndex(prev => prev - 1)}
+          >
+            ←
+          </button>
+
+          <div className="hud-zone-info">
+            <span className="hud-zone-step">ZONE {currentStepIndex + 1} OF 5</span>
+            <h2 className="hud-zone-name" style={{ color: activeZone.color }}>
+              {activeZone.name}
+            </h2>
+            <span className="hud-zone-hand">{activeHand} GLOVE • {activeZone.position.toUpperCase()}</span>
           </div>
-          
-          <div className="cal-capture-zone">
-            {countdown > 0 ? (
-              <div className="countdown-circle">
-                <div className="countdown-ring">
-                  <svg width="200" height="200">
-                    <circle cx="100" cy="100" r="90" className="countdown-bg" />
-                    <circle cx="100" cy="100" r="90" className="countdown-progress"
-                      style={{ strokeDashoffset: `${565 - (565 / 5) * (5 - countdown)}` }}
-                    />
-                  </svg>
-                  <div className="countdown-number">{countdown}</div>
-                </div>
-                <p>Hold position...</p>
-              </div>
-            ) : capturedSteps.includes(currentStep) ? (
-              <div className="capture-success">
-                <div className="success-checkmark">✓</div>
-                <p>Position Captured</p>
-              </div>
-            ) : (
-              <div className="capture-ready">
-                <div className="ready-pulse"></div>
-                <p>Ready to capture</p>
-                {isCapturing && (
-                  <div className="stability-meter">
-                    <div className="stability-label">Stability</div>
-                    <div className="stability-bar">
-                      <div className="stability-fill" style={{ width: `${stability}%` }}></div>
-                    </div>
-                    <div className="stability-value">{Math.round(stability)}%</div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          
-          {!isCapturing && !capturedSteps.includes(currentStep) && (
-            <button className="cal-capture-btn" onClick={handleStartStep}>
-              Capture Position
+
+          <button 
+            className="hud-nav-btn"
+            disabled={currentStepIndex === DRUM_ZONES.length - 1 || isCapturing}
+            onClick={() => setCurrentStepIndex(prev => prev + 1)}
+          >
+            →
+          </button>
+        </div>
+
+        {/* Capture / Countdown Center Action */}
+        <div className="hud-action-center">
+          {isCapturing ? (
+            <div className="hud-countdown-pill">
+              <span className="countdown-digit">{countdown > 0 ? countdown : '✓'}</span>
+              <span className="countdown-msg">HOLD POSITION IN MATRIX</span>
+            </div>
+          ) : (
+            <button 
+              className="hud-capture-btn"
+              onClick={handleStartCapture}
+            >
+              {currentHandCalibrated[activeZone.id] ? 'RE-CALIBRATE ZONE' : 'CAPTURE POSITION'}
             </button>
           )}
+
+          <span className="hud-stability-tag">
+            STABILITY: {stability}% • ZERO-DRIFT LOCKED
+          </span>
         </div>
-        
-        <div className="cal-visual-guide">
-          <div className="sensor-data-panel">
-            <h4>Live Sensor Data</h4>
-            
-            <div className="data-section">
-              <div className="data-label">LEFT HAND QUATERNION</div>
-              <div className="quat-grid">
-                <div className="quat-value">
-                  <span className="quat-key">W</span>
-                  <span className="quat-val">{leftHand.quaternion.w.toFixed(3)}</span>
-                </div>
-                <div className="quat-value">
-                  <span className="quat-key">X</span>
-                  <span className="quat-val">{leftHand.quaternion.x.toFixed(3)}</span>
-                </div>
-                <div className="quat-value">
-                  <span className="quat-key">Y</span>
-                  <span className="quat-val">{leftHand.quaternion.y.toFixed(3)}</span>
-                </div>
-                <div className="quat-value">
-                  <span className="quat-key">Z</span>
-                  <span className="quat-val">{leftHand.quaternion.z.toFixed(3)}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="data-section">
-              <div className="data-label">FLEX SENSORS</div>
-              <div className="flex-list">
-                {Object.entries(leftHand.flex).map(([finger, value]) => (
-                  <div key={finger} className="flex-item">
-                    <span className="flex-finger">{finger.toUpperCase()}</span>
-                    <div className="flex-bar">
-                      <div className="flex-fill" style={{ width: `${(value / 1023) * 100}%` }}></div>
-                    </div>
-                    <span className="flex-value">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {capturedData.length > 0 && (
-              <div className="data-section">
-                <div className="data-label">CAPTURED DATA</div>
-                <div className="captured-list">
-                  {capturedData.map((data, i) => (
-                    <div key={i} className="captured-item">
-                      <span className="captured-step">Step {data.step + 1}</span>
-                      <span className="captured-quat">
-                        {data.leftQuat.w.toFixed(2)} {data.leftQuat.x.toFixed(2)} {data.leftQuat.y.toFixed(2)} {data.leftQuat.z.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+
+        {/* 5 Zone Progress Indicators */}
+        <div className="hud-zones-pills">
+          {DRUM_ZONES.map((zone, idx) => {
+            const isDone = currentHandCalibrated[zone.id]
+            const isCurrent = idx === currentStepIndex
+
+            return (
+              <button
+                key={zone.id}
+                className={`zone-pill-btn ${isCurrent ? 'active' : ''} ${isDone ? 'done' : ''}`}
+                onClick={() => !isCapturing && setCurrentStepIndex(idx)}
+              >
+                <span className="pill-dot" style={{ backgroundColor: isDone ? '#00ff9d' : zone.color }}></span>
+                <span className="pill-name">{zone.name}</span>
+                {isDone && <span className="pill-check">✓</span>}
+              </button>
+            )
+          })}
         </div>
+
       </div>
     </div>
   )

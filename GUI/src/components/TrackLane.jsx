@@ -1,75 +1,101 @@
 import React, { useState } from 'react'
 import useTransportStore from '../store/transportStore'
+import { Volume2, VolumeX } from 'lucide-react'
 import './TrackLane.css'
 
 function TrackLane({ track }) {
   const [muted, setMuted] = useState(false)
   const [solo, setSolo] = useState(false)
+  const [volume, setVolume] = useState(80)
   
   const globalLoopLength = useTransportStore((state) => state.globalLoopLength)
-  const currentLoopSample = useTransportStore((state) => state.currentLoopSample)
+  const trackNotes = useTransportStore((state) => state.trackNotes[track.id] || [])
   
-  const playheadPercent = globalLoopLength > 0 
-    ? (currentLoopSample / globalLoopLength) * 100 
-    : 0
-  
-  // Simulated MIDI notes (would come from actual recording data)
-  const midiNotes = [
-    { sampleOffset: globalLoopLength * 0.1 },
-    { sampleOffset: globalLoopLength * 0.25 },
-    { sampleOffset: globalLoopLength * 0.4 },
-    { sampleOffset: globalLoopLength * 0.55 },
-    { sampleOffset: globalLoopLength * 0.7 },
-    { sampleOffset: globalLoopLength * 0.85 },
+  // Default rhythmic note patterns for tracks if none recorded yet
+  const defaultNotes = [
+    { sampleOffset: 0.08, width: 6 },
+    { sampleOffset: 0.25, width: 8 },
+    { sampleOffset: 0.42, width: 5 },
+    { sampleOffset: 0.58, width: 10 },
+    { sampleOffset: 0.75, width: 7 },
+    { sampleOffset: 0.90, width: 6 },
   ]
   
   return (
-    <div className="track-juce-exact">
-      {/* Controls area (dark background) */}
-      <div className="track-controls-dark">
-        <div className="track-name-label">{track.name}</div>
-        <button 
-          className={`btn-m ${muted ? 'active' : ''}`}
-          onClick={() => setMuted(!muted)}
-        >
-          M
-        </button>
-        <button 
-          className={`btn-s ${solo ? 'active' : ''}`}
-          onClick={() => setSolo(!solo)}
-        >
-          S
-        </button>
-        <button className="btn-v">V</button>
-        <button className="btn-x">X</button>
+    <div className={`track-lane-cyber ${muted ? 'is-muted' : ''} ${solo ? 'is-solo' : ''}`}>
+      {/* Track Controls (Left header - 180px fixed width) */}
+      <div className="track-controls">
+        <div className="track-identity">
+          <span className="track-color-pill" style={{ background: track.color }} />
+          <span className="track-title">{track.name}</span>
+        </div>
+
+        <div className="track-btn-group">
+          <button 
+            className={`control-pill mute-pill ${muted ? 'active' : ''}`}
+            onClick={() => setMuted(!muted)}
+            title="Mute Track"
+          >
+            M
+          </button>
+          
+          <button 
+            className={`control-pill solo-pill ${solo ? 'active' : ''}`}
+            onClick={() => setSolo(!solo)}
+            title="Solo Track"
+          >
+            S
+          </button>
+        </div>
+
+        {/* Mini Volume Bar */}
+        <div className="track-mini-meter">
+          <div 
+            className="meter-bar" 
+            style={{ 
+              width: muted ? '0%' : `${volume}%`,
+              background: muted ? '#6E7C80' : track.color 
+            }} 
+          />
+        </div>
       </div>
       
-      {/* Timeline area (darker background with grid) */}
-      <div className="track-timeline-dark">
-        {/* Grid lines (16 divisions) */}
-        <div className="timeline-grid">
+      {/* Track Timeline Lane */}
+      <div className="track-timeline">
+        {/* 16 Division Grid lines */}
+        <div className="division-grid">
           {[...Array(16)].map((_, i) => (
-            <div key={i} className="grid-line" style={{ left: `${(i / 16) * 100}%` }}></div>
+            <div 
+              key={i} 
+              className={`div-line ${i % 4 === 0 ? 'bar-boundary' : ''}`}
+              style={{ left: `${(i / 16) * 100}%` }}
+            />
           ))}
         </div>
         
-        {/* MIDI Notes */}
-        {globalLoopLength > 0 && midiNotes.map((note, i) => {
-          const xPos = (note.sampleOffset / globalLoopLength) * 100
-          return (
-            <div
-              key={i}
-              className="midi-note"
-              style={{
-                left: `${xPos}%`,
-                background: track.color,
-                borderColor: track.color,
-              }}
-            >
-              <div className="note-highlight"></div>
-            </div>
-          )
-        })}
+        {/* Active Events / Recorded Clips */}
+        <div className="clips-layer">
+          {(trackNotes.length > 0 ? trackNotes : defaultNotes).map((note, i) => {
+            const leftPos = globalLoopLength > 0 && note.sampleOffset > 1
+              ? (note.sampleOffset / globalLoopLength) * 100
+              : (note.sampleOffset * 100)
+
+            return (
+              <div
+                key={i}
+                className="event-clip"
+                style={{
+                  left: `${leftPos % 100}%`,
+                  width: `${note.width || 18}px`,
+                  background: muted ? '#4A5568' : track.color,
+                  borderColor: muted ? '#718096' : track.color,
+                }}
+              >
+                <div className="clip-handle" />
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

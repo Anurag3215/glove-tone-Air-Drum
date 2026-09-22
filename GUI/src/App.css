@@ -13,47 +13,132 @@
   position: relative;
 }
 
-/* LEFT: 3D Hands Panel (50%) */
+/* 3D Hands Panel - Full Portion Viewport */
 .hands-section {
   flex: 1;
-  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
-  border-right: 1px solid var(--color-border-subtle);
+  width: 100%;
+  height: 100%;
+  background: var(--color-bg-primary);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: var(--spacing-lg);
+  padding: 0;
   position: relative;
-}
-
-.hands-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(90deg, transparent 0%, rgba(0, 217, 255, 0.03) 50%, transparent 100%),
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 217, 255, 0.05) 2px, rgba(0, 217, 255, 0.05) 4px);
-  pointer-events: none;
-  opacity: 0.5;
-}
-
-/* RIGHT: Tracks Panel (50%) */
-.tracks-section {
-  flex: 1;
-  background: var(--color-bg-secondary);
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
 
-/* Fullscreen mode when tracks hidden */
-.hands-section.fullscreen {
-  flex: 1 1 100%;
+.hands-section.full-portion {
+  width: 100%;
+  height: 100%;
+  border-right: none;
 }
 
-.tracks-section.hidden {
-  display: none;
+/* On-Demand DAW Tracks Pop-up Modal */
+.tracks-popup-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: modal-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tracks-popup-modal-content {
+  width: 96%;
+  max-width: 1280px;
+  height: 84vh;
+  max-height: 860px;
+  background: #0A0A0A;
+  border: 1px solid #333333;
+  border-radius: var(--radius-md);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modal-scale-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tracks-popup-modal-header {
+  height: 46px;
+  background: #111111;
+  border-bottom: 1px solid #222222;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.popup-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.popup-title-icon {
+  font-size: 16px;
+}
+
+.popup-title-text {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #FFFFFF;
+}
+
+.popup-title-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: #222222;
+  color: #AAAAAA;
+  border: 1px solid #333333;
+  letter-spacing: 0.05em;
+}
+
+.popup-modal-close-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #181818;
+  border: 1px solid #333333;
+  color: #AAAAAA;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.popup-modal-close-btn:hover {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.tracks-popup-modal-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: #000000;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-scale-up {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }

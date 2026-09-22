@@ -1,115 +1,176 @@
-.track-juce-exact {
+/* Cyber DAW Track Lane */
+
+.track-lane-cyber {
   display: flex;
-  height: 50px;
-  background: #181818;
-  border-bottom: 1px solid #111111;
+  height: 48px;
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border-subtle);
+  position: relative;
+  transition: background 0.15s ease;
 }
 
-/* Controls area - Dark background #262626 */
-.track-controls-dark {
-  width: 190px;
-  background: #262626;
-  border-right: 1px solid #111111;
+.track-lane-cyber:hover {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+/* Track Controls Area (180px fixed width) */
+.track-controls {
+  width: 180px;
+  background: var(--color-bg-secondary);
+  border-right: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 5px;
+  justify-content: space-between;
+  padding: 0 12px;
   flex-shrink: 0;
+  gap: 8px;
 }
 
-.track-name-label {
-  width: 70px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #FFFFFF;
-  padding: 0 5px;
-}
-
-/* Buttons - FL Studio style */
-.btn-m,
-.btn-s,
-.btn-v,
-.btn-x {
-  width: 24px;
-  height: 24px;
-  background: #383838;
-  border: 1px solid rgba(0, 0, 0, 0.3);
-  color: #CCCCCC;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-m:hover,
-.btn-s:hover,
-.btn-v:hover,
-.btn-x:hover {
-  background: #505050;
-  color: #FFFFFF;
-}
-
-.btn-m.active {
-  background: #FF6C00;
-  border-color: #FF6C00;
-  color: #FFFFFF;
-}
-
-.btn-s.active {
-  background: #00CCFF;
-  border-color: #00CCFF;
-  color: #FFFFFF;
-}
-
-/* Timeline area - Darker background #181818 */
-.track-timeline-dark {
+.track-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex: 1;
-  background: #181818;
-  position: relative;
   overflow: hidden;
 }
 
-/* Grid lines */
-.timeline-grid {
+.track-color-pill {
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.track-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.04em;
+}
+
+.track-btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.control-pill {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-border-medium);
+  color: var(--color-text-tertiary);
+  font-size: 9px;
+  font-weight: 800;
+  font-family: 'Roboto Mono', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.control-pill:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-strong);
+}
+
+.mute-pill.active {
+  background: rgba(255, 176, 32, 0.2);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.solo-pill.active {
+  background: rgba(0, 204, 255, 0.2);
+  border-color: #00CCFF;
+  color: #00CCFF;
+}
+
+/* Mini Volume Meter */
+.track-mini-meter {
+  width: 24px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.meter-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+/* Timeline Lane Area */
+.track-timeline {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+}
+
+/* 16 Division Grid Lines */
+.division-grid {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  pointer-events: none;
 }
 
-.grid-line {
+.div-line {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 1px;
-  background: #2D2D2D;
+  background: rgba(255, 255, 255, 0.025);
 }
 
-/* MIDI Note rectangles */
-.midi-note {
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  width: 6px;
-  opacity: 0.6;
-  border: 1px solid;
-  border-radius: 1px;
-  transition: opacity 0.15s;
-  cursor: pointer;
+.div-line.bar-boundary {
+  background: var(--color-border-subtle);
 }
 
-.midi-note:hover {
-  opacity: 1;
-}
-
-/* White highlight at top of note (like JUCE) */
-.note-highlight {
+/* Clips Layer */
+.clips-layer {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.event-clip {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  border-radius: 2px;
+  border: 1px solid;
+  opacity: 0.85;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  transition: all 0.15s ease;
+}
+
+.clip-handle {
+  width: 3px;
+  height: 100%;
   background: rgba(255, 255, 255, 0.4);
+  border-radius: 1px 0 0 1px;
+}
+
+/* Muted & Solo States */
+.track-lane-cyber.is-muted .event-clip {
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+
+.track-lane-cyber.is-muted .track-title {
+  color: var(--color-text-tertiary);
 }

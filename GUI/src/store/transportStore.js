@@ -20,9 +20,8 @@ const useTransportStore = create((set, get) => ({
     2: [],  // Drums Z
     3: [],  // Keys
     4: [],  // Chords
-    5: [],  // Violin
-    6: [],  // Guitar
-    7: [],  // MP3
+    5: [],  // Guitar
+    6: [],  // MP3
   },
   
   // Actions
@@ -30,6 +29,13 @@ const useTransportStore = create((set, get) => ({
     playing: !state.playing,
     paused: false 
   })),
+  
+  stopPlayback: () => set({
+    playing: false,
+    recording: false,
+    paused: false,
+    currentLoopSample: 0,
+  }),
   
   toggleRecord: () => set((state) => {
     const newRecording = !state.recording
@@ -92,7 +98,7 @@ const useTransportStore = create((set, get) => ({
   
   // Update playhead position
   updatePlayhead: (delta) => set((state) => {
-    if (!state.playing || state.paused) return {}
+    if (!state.playing || state.paused) return state
     
     const newSample = state.currentLoopSample + delta
     const loopLength = state.globalLoopLength

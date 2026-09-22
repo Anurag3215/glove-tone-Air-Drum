@@ -1,71 +1,194 @@
-.tracks-panel-juce {
+/* Cyber Music Studio - DAW Music Timeline & Transport */
+
+.tracks-panel-daw {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #1E1E1E;
+  background: var(--color-bg-primary);
+  border-left: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  user-select: none;
 }
 
-/* Header - JUCE style */
-.tracks-header-juce {
-  height: 60px;
-  background: #262626;
-  border-bottom: 1px solid #111111;
+/* 1. Transport Bar */
+.daw-transport-bar {
+  height: 48px;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 20px;
+  justify-content: space-between;
+  padding: 0 16px;
   flex-shrink: 0;
 }
 
-.juce-btn {
-  width: 80px;
-  height: 30px;
-  background: #2D2D2D;
-  border: 1px solid rgba(0, 0, 0, 0.3);
-  color: #CCCCCC;
-  font-size: 12px;
+.transport-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.daw-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-medium);
+  color: var(--color-text-secondary);
+  font-size: 11px;
   font-weight: 700;
-  border-radius: 4px;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
+  outline: none;
 }
 
-.juce-btn:hover {
-  background: #383838;
-  color: #FFFFFF;
+.daw-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-strong);
 }
 
-.juce-btn.active-play {
-  background: #00FF00;
-  border-color: #00FF00;
+.play-btn.active-play {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
   color: #000000;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
 }
 
-.juce-btn.active-rec {
-  background: #FF0000;
-  border-color: #FF0000;
-  color: #FFFFFF;
+.rec-btn.active-rec {
+  background: rgba(255, 77, 103, 0.2);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  box-shadow: 0 0 8px rgba(255, 77, 103, 0.35);
 }
 
-.bar-display {
-  margin-left: auto;
-  font-size: 12px;
-  font-weight: 600;
-  color: #CCCCCC;
+.rec-pulse {
+  animation: rec-blinker 1s infinite ease-in-out;
+}
+
+@keyframes rec-blinker {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.85); }
+}
+
+.clear-btn:hover {
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.daw-meter-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* 2. Performance Strip */
+.daw-performance-strip {
+  height: 32px;
+  background: rgba(8, 10, 12, 0.95);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.perf-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.perf-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+}
+
+.perf-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.perf-val.active-teal {
+  color: var(--color-accent-active);
+}
+
+.perf-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--color-border-subtle);
+}
+
+/* 3. Time Division Ruler */
+.daw-ruler-header {
+  height: 24px;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ruler-spacer {
+  width: 180px;
+  padding-left: 16px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--color-text-tertiary);
+  border-right: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+}
+
+.ruler-timeline {
+  flex: 1;
+  display: flex;
+  height: 100%;
+}
+
+.ruler-mark {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
   font-family: 'Roboto Mono', monospace;
+  font-size: 8px;
+  color: var(--color-text-tertiary);
+  border-left: 1px solid var(--color-border-subtle);
 }
 
-/* Tracks container */
-.tracks-container-juce {
+.ruler-mark.major {
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  border-left-color: var(--color-border-medium);
+}
+
+/* 4. Multi-Track Timeline Container */
+.daw-tracks-container {
   flex: 1;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-/* Playhead overlay - Orange line across all tracks */
-.playhead-overlay {
+/* Dynamic Animated Playhead */
+.daw-playhead-overlay {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -74,23 +197,70 @@
   z-index: 100;
 }
 
-.playhead-triangle {
+.daw-playhead-pointer {
   position: absolute;
   top: 0;
-  left: -6px;
+  left: -5px;
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 10px solid #FF6C00;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 8px solid #FFFFFF;
 }
 
-.playhead-line {
+.daw-playhead-beam {
   position: absolute;
-  top: 10px;
+  top: 6px;
   bottom: 0;
   left: 0;
-  width: 2px;
-  background: #FF6C00;
-  box-shadow: 0 0 4px #FF6C00;
+  width: 1.5px;
+  background: #FFFFFF;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+/* 5. System Telemetry Panel at Bottom */
+.daw-telemetry-panel {
+  height: 38px;
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+.telemetry-item {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.t-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+}
+
+.t-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.status-col {
+  display: flex;
+  align-items: center;
+}
+
+.t-status {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #FFFFFF;
+  background: #181818;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #333333;
 }

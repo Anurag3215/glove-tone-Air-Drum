@@ -1,10 +1,11 @@
 .status-bar-pro {
-  background: var(--color-bg-elevated);
+  background: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border-subtle);
-  padding: var(--spacing-md) var(--spacing-xl);
+  padding: 10px 24px;
   display: flex;
-  gap: var(--spacing-xl);
+  gap: 24px;
   align-items: center;
+  user-select: none;
 }
 
 .status-section {
@@ -13,30 +14,109 @@
   gap: 4px;
 }
 
+.status-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--color-border-subtle);
+}
+
 .section-label {
   font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   color: var(--color-text-tertiary);
+  text-transform: uppercase;
 }
 
 /* Instrument Display */
 .instrument-display .instrument-name {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   color: var(--color-text-primary);
+}
+
+/* Connection Controls */
+.connection-control-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ON / OFF Switch Toggle */
+.connection-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border-medium);
+  background: #111111;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.connection-toggle-btn:hover {
+  border-color: var(--color-border-strong);
+  background: #181818;
+}
+
+.connection-toggle-btn .toggle-slider-knob {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #555555;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.connection-toggle-btn .toggle-label {
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 0.05em;
+  min-width: 22px;
+  text-align: center;
+}
+
+/* When ON */
+.connection-toggle-btn.on {
+  background: #FFFFFF;
+  color: #000000;
+  border-color: #FFFFFF;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+}
+
+.connection-toggle-btn.on .toggle-slider-knob {
+  background: #000000;
+}
+
+.connection-toggle-btn.on .toggle-label {
+  color: #000000;
+}
+
+/* When OFF */
+.connection-toggle-btn.off {
+  background: #0D0D0D;
+  color: #666666;
+  border-color: #222222;
+}
+
+.connection-toggle-btn.off .toggle-slider-knob {
+  background: #333333;
 }
 
 /* WiFi Connection */
 .connection-indicator {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 8px;
 }
 
 .wifi-icon {
-  width: 20px;
-  height: 16px;
+  width: 18px;
+  height: 14px;
   position: relative;
   display: flex;
   align-items: flex-end;
@@ -45,100 +125,177 @@
 
 .wifi-bar {
   flex: 1;
-  background: var(--color-text-tertiary);
+  background: #333333;
   border-radius: 1px;
-  opacity: 0.3;
+  opacity: 0.35;
 }
 
 .wifi-icon.connected .wifi-bar {
-  background: var(--color-success);
+  background: #FFFFFF;
   opacity: 1;
 }
 
-.bar-1 { height: 30%; }
-.bar-2 { height: 60%; }
+.wifi-icon.connected .bar-1 { height: 35%; }
+.wifi-icon.connected .bar-2 { height: 65%; }
+.wifi-icon.connected .bar-3 { height: 100%; }
+
+.wifi-icon.disconnected .wifi-bar {
+  background: #444444;
+  opacity: 0.4;
+}
+
+.bar-1 { height: 35%; }
+.bar-2 { height: 65%; }
 .bar-3 { height: 100%; }
 
 .connection-text {
   font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
-.wifi-icon.connected + .connection-text {
-  color: var(--color-success);
+.connection-text.connected {
+  color: #FFFFFF;
 }
 
-/* Glove Status */
+.connection-text.disconnected {
+  color: #666666;
+}
+
+/* Glove Status Buttons */
 .glove-status {
   display: flex;
-  gap: var(--spacing-md);
+  gap: 8px;
 }
 
-.glove-item {
+.glove-item-btn {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 4px 10px;
+  background: #111111;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.glove-item-btn:hover {
+  border-color: var(--color-border-medium);
+  background: #181818;
 }
 
 .glove-label {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.05em;
   color: var(--color-text-secondary);
+}
+
+.glove-item-btn.active .glove-label {
+  color: #FFFFFF;
+}
+
+.glove-item-btn.inactive .glove-label {
+  color: #555555;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--color-text-tertiary);
+  background: #444444;
+  transition: all 0.2s ease;
 }
 
 .status-dot.active {
-  background: var(--color-success);
-  box-shadow: 0 0 8px var(--color-success);
+  background: #22C55E;
+  box-shadow: 0 0 8px #22C55E;
 }
 
-.battery-mini {
-  width: 40px;
-  height: 8px;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-medium);
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
+.status-dot.inactive {
+  background: #333333;
+  box-shadow: none;
 }
 
-.battery-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-success), var(--color-success));
-  transition: width 0.3s;
+.status-spacer {
+  flex: 1;
 }
 
-.battery-percent {
-  font-size: 11px;
-  font-weight: 600;
-  font-family: 'Roboto Mono', monospace;
-  color: var(--color-text-secondary);
+.tracks-trigger-section {
+  align-items: flex-end;
 }
 
-/* Calibration Health */
-.health-badge {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 12px;
+.daw-toggle-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  background: #111111;
+  border: 1px solid #333333;
   border-radius: var(--radius-sm);
-  text-align: center;
+  color: #FFFFFF;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.health-badge.good {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--color-success);
-  border: 1px solid var(--color-success);
+.daw-toggle-trigger-btn:hover {
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  color: #000000;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
 }
 
-.health-badge.warning {
-  background: rgba(251, 191, 36, 0.15);
-  color: var(--color-warning);
-  border: 1px solid var(--color-warning);
+.daw-toggle-trigger-btn:hover .daw-badge {
+  background: #000000;
+  color: #FFFFFF;
+  border-color: #000000;
+}
+
+.daw-icon {
+  font-size: 14px;
+}
+
+.daw-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.daw-badge {
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'Roboto Mono', monospace;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #222222;
+  color: #AAAAAA;
+  border: 1px solid #333333;
+  transition: all 0.2s ease;
+}
+
+.daw-toggle-trigger-btn.open {
+  background: #FFFFFF;
+  color: #000000;
+  border-color: #FFFFFF;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.35);
+}
+
+.daw-toggle-trigger-btn.open .daw-badge {
+  background: #000000;
+  color: #FFFFFF;
+}
+
+.daw-toggle-trigger-btn.is-recording .daw-badge {
+  background: #EF4444;
+  color: #FFFFFF;
+  border-color: #EF4444;
+  animation: rec-badge-pulse 1s infinite ease-in-out;
+}
+
+@keyframes rec-badge-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.95); }
 }

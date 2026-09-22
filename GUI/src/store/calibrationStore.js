@@ -8,11 +8,10 @@ const useCalibrationStore = create((set) => ({
     pose: false,
     drums: false,
     keys: false,
-    violin: false,
   },
   
   // Current calibration in progress (null if none)
-  currentCalibration: null,  // 'flex', 'pose', 'drums', 'keys', 'violin'
+  currentCalibration: null,  // 'flex', 'pose', 'drums', 'keys'
   currentStep: 0,
   totalSteps: 0,
   countdown: 0,
@@ -25,7 +24,6 @@ const useCalibrationStore = create((set) => ({
       pose: 3,    // Neutral, Left Wakanda, Right Wakanda
       drums: 10,  // 5 left hand zones + 5 right hand zones
       keys: 6,    // Left: neutral/up/down, Right: neutral/up/down
-      violin: 6,  // Yaw: neutral/flat/sharp, Roll: neutral/up/down
     }
     
     set({
@@ -89,7 +87,6 @@ const useCalibrationStore = create((set) => ({
       pose: false,
       drums: false,
       keys: false,
-      violin: false,
     },
     currentCalibration: null,
     currentStep: 0

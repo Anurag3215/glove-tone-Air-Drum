@@ -33,14 +33,6 @@ const stepInstructions = {
     { title: 'Right Hand - Pitch Up', instruction: 'Tilt right hand up', hand: 'right' },
     { title: 'Right Hand - Pitch Down', instruction: 'Tilt right hand down', hand: 'right' },
   ],
-  violin: [
-    { title: 'Yaw - Neutral', instruction: 'Hand pointing forward (neutral yaw)', hand: 'left' },
-    { title: 'Yaw - Flat', instruction: 'Rotate hand down (flat note)', hand: 'left' },
-    { title: 'Yaw - Sharp', instruction: 'Rotate hand up (sharp note)', hand: 'left' },
-    { title: 'Roll - Neutral', instruction: 'Hand level (neutral roll)', hand: 'left' },
-    { title: 'Roll - Up', instruction: 'Roll hand up (octave up)', hand: 'left' },
-    { title: 'Roll - Down', instruction: 'Roll hand down (octave down)', hand: 'left' },
-  ],
 }
 
 function CalibrationWizard({ type }) {

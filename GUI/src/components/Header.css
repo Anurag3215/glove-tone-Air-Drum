@@ -1,6 +1,8 @@
-.header-minimal {
-  height: 56px;
-  background: var(--color-bg-elevated);
+/* Cyber Music Studio Header */
+
+.header-cyber {
+  height: 52px;
+  background: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
@@ -8,106 +10,157 @@
   padding: 0 var(--spacing-xl);
   position: relative;
   z-index: 100;
+  user-select: none;
 }
 
 /* Brand */
-.header-brand-minimal {
+.header-brand {
   display: flex;
   align-items: baseline;
-  gap: var(--spacing-sm);
+  gap: 8px;
 }
 
 .brand-name {
   font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   color: var(--color-text-primary);
 }
 
 .brand-version {
   font-size: 10px;
-  font-weight: 500;
-  color: var(--color-text-tertiary);
+  font-weight: 700;
+  font-family: 'Roboto Mono', monospace;
+  color: #FFFFFF;
+  background: #181818;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #333333;
 }
 
 /* Navigation */
-.header-nav-minimal {
+.header-nav {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: 6px;
+  background: #000000;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
 }
 
-.nav-item {
+.nav-btn {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
   border-radius: var(--radius-sm);
+  outline: none;
 }
 
-.nav-item:hover {
+.nav-btn:hover {
   color: var(--color-text-primary);
-  background: var(--color-bg-secondary);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.nav-item.active {
-  color: var(--color-text-primary);
-  background: var(--color-bg-primary);
-  font-weight: 600;
+/* Crisp White Active State */
+.nav-btn.active {
+  color: #000000;
+  background: #FFFFFF;
+  border-color: #FFFFFF;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
 }
 
-/* Stats */
-.header-stats {
+/* Right Status Area */
+.header-status {
   display: flex;
-  gap: var(--spacing-lg);
   align-items: center;
+  gap: var(--spacing-lg);
 }
 
-.stat-group {
+.status-pill {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: flex-end;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
-.stat-label {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  color: var(--color-text-tertiary);
+.status-dot-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #444444;
+  transition: all 0.2s ease;
 }
 
-.stat-value {
-  font-size: 13px;
-  font-weight: 600;
-  font-family: 'Roboto Mono', monospace;
+.status-dot-pulse.online {
+  background: #22C55E;
+  box-shadow: 0 0 8px #22C55E;
+  animation: pulse-dot 2.5s infinite ease-in-out;
+}
+
+.status-dot-pulse.offline {
+  background: var(--color-danger);
+  box-shadow: 0 0 6px var(--color-danger);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.status-pill-text {
   color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 
-.stat-indicators {
+/* Glove Badges */
+.glove-badges {
   display: flex;
   gap: 4px;
 }
 
-.indicator {
+.glove-badge {
   font-size: 11px;
-  font-weight: 700;
-  padding: 2px 6px;
+  font-weight: 800;
+  padding: 2px 7px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-medium);
-  background: var(--color-bg-secondary);
-  color: var(--color-text-tertiary);
+  font-family: 'Roboto Mono', monospace;
+  transition: all 0.2s ease;
 }
 
-.indicator.on {
-  background: var(--color-success);
-  border-color: var(--color-success);
-  color: #FFFFFF;
+.glove-badge.on {
+  background: #FFFFFF;
+  border: 1px solid #FFFFFF;
+  color: #000000;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
-.indicator.off {
-  opacity: 0.4;
+.glove-badge.off {
+  background: #111111;
+  border: 1px solid #262626;
+  color: #555555;
+  opacity: 0.6;
+}
+
+/* Metrics */
+.header-metric {
+  display: flex;
+  align-items: center;
+}
+
+.metric-val {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.04em;
 }

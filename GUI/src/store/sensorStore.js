@@ -2,7 +2,10 @@ import { create } from 'zustand'
 import * as THREE from 'three'
 
 // Mock sensor data store
-const useSensorStore = create((set) => ({
+const useSensorStore = create((set, get) => ({
+  // Global connection state
+  isConnected: true,
+
   // Left hand data
   leftHand: {
     quaternion: { w: 1, x: 0, y: 0, z: 0 },
@@ -31,6 +34,33 @@ const useSensorStore = create((set) => ({
     connected: true,
     sampleRate: 120
   },
+
+  // Toggle master connection
+  toggleConnection: (forceState) => set((state) => {
+    const nextState = forceState !== undefined ? forceState : !state.isConnected
+    return {
+      isConnected: nextState,
+      leftHand: { ...state.leftHand, connected: nextState },
+      rightHand: { ...state.rightHand, connected: nextState }
+    }
+  }),
+
+  // Toggle individual hands
+  toggleLeftHand: () => set((state) => {
+    const nextConnected = !state.leftHand.connected
+    return {
+      leftHand: { ...state.leftHand, connected: nextConnected },
+      isConnected: nextConnected || state.rightHand.connected
+    }
+  }),
+
+  toggleRightHand: () => set((state) => {
+    const nextConnected = !state.rightHand.connected
+    return {
+      rightHand: { ...state.rightHand, connected: nextConnected },
+      isConnected: state.leftHand.connected || nextConnected
+    }
+  }),
   
   // Update left hand
   updateLeftHand: (data) => set((state) => ({
@@ -46,7 +76,12 @@ const useSensorStore = create((set) => ({
   startMockData: () => {
     let time = 0
     const interval = setInterval(() => {
-      time += 0.008  // Fast progression
+      const state = get()
+      if (!state.isConnected) {
+        return
+      }
+
+      time += 0.016  // Smooth 30Hz simulation
       
       // Dynamic rotation - different speeds for each axis
       const rotX = Math.sin(time * 1.5) * 0.5
@@ -74,21 +109,21 @@ const useSensorStore = create((set) => ({
         pinky: 560 + Math.cos(time * 1.6) * 260,
       }
       
-      set({
-        leftHand: {
-          connected: true,
+      set((curr) => ({
+        leftHand: curr.leftHand.connected ? {
+          ...curr.leftHand,
           quaternion: { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
           flex: leftFlex,
           sampleRate: 60,
-        },
-        rightHand: {
-          connected: true,
+        } : curr.leftHand,
+        rightHand: curr.rightHand.connected ? {
+          ...curr.rightHand,
           quaternion: { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
           flex: rightFlex,
           sampleRate: 60,
-        }
-      })
-    }, 1000 / 60)  // 60 FPS - smooth but not laggy
+        } : curr.rightHand
+      }))
+    }, 1000 / 30)  // 30 FPS state updates - smooth and zero lag
     
     return () => clearInterval(interval)
   }

@@ -5,8 +5,27 @@ const useSettingsStore = create((set) => ({
   // Theme
   theme: 'dark',  // 'dark' or 'light'
   
+  // Hand Hologram Design: 'particles' (Quantum Volumetric Hand) | 'wireframe' (3D Mesh Matrix)
+  hologramDesign: 'particles',
+
+  // Hand Color Style: 'cyan' | 'purple' | 'gold'
+  handStyle: 'cyan',
+
+  // Bloom Intensity (Camera Lens Diffusion): 0.0 to 3.5 (default: 1.7)
+  bloomIntensity: 1.7,
+
+  // Glow Intensity (Material Emissive Radiance): 0.5 to 4.0 (default: 2.0)
+  glowIntensity: 2.0,
+  
   // Current instrument
-  currentInstrument: 2,  // 0=Drums, 1=DrumsZ, 2=Keys, 3=Chords, 4=Violin, 5=Guitar, 6=MP3
+  currentInstrument: 0,  // 0=Drums, 1=DrumsZ, 2=Keys, 3=Chords, 4=Guitar, 5=MP3
+  
+  // Air Drum Gesture Control Options:
+  // 'hybrid': Spatial Aim (hand orient) + Finger Tap (trigger)
+  // 'fingers': Direct Finger Percussion (Thumb=Kick, Index=Snare, Middle=Tom, Ring=HiHat, Pinky=Crash)
+  // 'kinetic': Kinetic Air Strike (downward wrist flick into zone)
+  airDrumMode: 'hybrid',
+  showDrumKit: true,
   
   // General sensitivity
   flexSensitivity: 50,      // 0-100
@@ -32,8 +51,20 @@ const useSettingsStore = create((set) => ({
   
   // Actions
   setTheme: (theme) => set({ theme }),
+
+  setHologramDesign: (hologramDesign) => set({ hologramDesign }),
+
+  setHandStyle: (handStyle) => set({ handStyle }),
+
+  setBloomIntensity: (bloomIntensity) => set({ bloomIntensity }),
+
+  setGlowIntensity: (glowIntensity) => set({ glowIntensity }),
   
   setInstrument: (instrument) => set({ currentInstrument: instrument }),
+  
+  setAirDrumMode: (airDrumMode) => set({ airDrumMode }),
+  
+  setShowDrumKit: (showDrumKit) => set({ showDrumKit }),
   
   setFlexSensitivity: (value) => set({ flexSensitivity: value }),
   

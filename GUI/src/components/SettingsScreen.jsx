@@ -7,9 +7,8 @@ const INSTRUMENTS = [
   { id: 1, name: 'Drums Z' },
   { id: 2, name: 'Keys' },
   { id: 3, name: 'Chords' },
-  { id: 4, name: 'Violin' },
-  { id: 5, name: 'Guitar' },
-  { id: 6, name: 'MP3' },
+  { id: 4, name: 'Guitar' },
+  { id: 5, name: 'MP3' },
 ]
 
 function SettingsScreen() {
