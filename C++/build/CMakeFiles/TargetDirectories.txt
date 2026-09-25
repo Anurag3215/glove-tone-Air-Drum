@@ -1,9 +1,0 @@
-D:/GloveTone/C++/build/CMakeFiles/GloveTone.dir
-D:/GloveTone/C++/build/CMakeFiles/INSTALL.dir
-D:/GloveTone/C++/build/CMakeFiles/ALL_BUILD.dir
-D:/GloveTone/C++/build/CMakeFiles/ZERO_CHECK.dir
-D:/GloveTone/C++/build/JUCE/CMakeFiles/INSTALL.dir
-D:/GloveTone/C++/build/JUCE/CMakeFiles/ALL_BUILD.dir
-D:/GloveTone/C++/build/JUCE/modules/CMakeFiles/INSTALL.dir
-D:/GloveTone/C++/build/JUCE/extras/Build/CMakeFiles/INSTALL.dir
-D:/GloveTone/C++/build/JUCE/extras/Build/juceaide/CMakeFiles/INSTALL.dir
