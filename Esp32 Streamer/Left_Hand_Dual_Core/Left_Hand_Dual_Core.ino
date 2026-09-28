@@ -198,12 +198,14 @@ void checkSensorHealth() {
 // CORE 0 TASK: DEDICATED SENSOR POLLING
 // ============================================================================
 
+bool imuAvailable = false;
+
 void sensorTask(void* parameter) {
   Serial.println("[Core 0] 🎯 Sensor task started - dedicated polling");
   
   while (true) {
-    // READ SENSOR DATA VIA SPI POLLING
-    if (bno08x.getSensorEvent(&sensorValue)) {
+    // READ SENSOR DATA VIA SPI POLLING (if IMU is connected)
+    if (imuAvailable && bno08x.getSensorEvent(&sensorValue)) {
       processSensorData();
     }
     
@@ -228,15 +230,18 @@ void setup() {
   setCpuFrequencyMhz(240);
   
   delay(1000);
-  Serial.begin(921600);
+  Serial.begin(115200);
   delay(500);
   
   // Clear boot garbage
   for(int i = 0; i < 10; i++) Serial.println();
   Serial.flush();
   
-  Serial.println("🚀 DUAL-CORE LEFT HAND WIFI SPI STREAMER");
+  Serial.println("🚀 DUAL-CORE LEFT HAND WIFI STREAMER");
   Serial.printf("📡 CPU Frequency: %d MHz (2 cores)\n", getCpuFrequencyMhz());
+  
+  // Use 10-bit ADC resolution (0-1023) to match GloveTone frontend
+  analogReadResolution(10);
   
   // Initialize flex sensor pins
   pinMode(FLEX_THUMB, INPUT);
@@ -248,45 +253,24 @@ void setup() {
   // Initialize IMU hardware control pins
   pinMode(BNO08X_RST_PIN, OUTPUT);
   pinMode(BNO08X_CS_PIN, OUTPUT);
-  pinMode(BNO08X_INT_PIN, INPUT_PULLUP);  // INT must be configured as input with pullup
-  digitalWrite(BNO08X_CS_PIN, HIGH);  // CS idle high
-  
-  Serial.println("[HARDWARE] ✓ RST=GPIO13, CS=GPIO5, INT=GPIO4");
+  pinMode(BNO08X_INT_PIN, INPUT_PULLUP);
+  digitalWrite(BNO08X_CS_PIN, HIGH);
   
   // INITIALIZE SPI
   SPI.begin();
-  Serial.println("[SPI] Initialized @ 3MHz (default for BNO085)");
-  
-  // HARDWARE RESET SEQUENCE
   hardwareResetBNO085();
   
-  // Initialize IMU in SPI mode (polling, no INT pin needed)
+  // Initialize IMU in SPI mode (non-blocking if only flex sensors are used)
   if (!bno08x.begin_SPI(BNO08X_CS_PIN, BNO08X_INT_PIN)) {
-    Serial.println("❌ BNO085_SPI_INIT_FAILED");
-    Serial.println("Check wiring:");
-    Serial.println("  PS0 → 3.3V (SPI mode)");
-    Serial.println("  PS1 → 3.3V (SPI mode)");
-    Serial.println("  CS  → GPIO5");
-    Serial.println("  INT → GPIO4 (not used, but required by library)");
-    Serial.println("  RST → GPIO13");
-    Serial.println("  SCK → GPIO18 (default SPI)");
-    Serial.println("  DI (MOSI) → GPIO23 (default SPI)");
-    Serial.println("  SDA (MISO) → GPIO19 (default SPI)");
-    Serial.println("  3.3V, GND");
-    while (1) {
-      delay(1000);
-      Serial.println("Halted - fix wiring and reset");
-    }
+    imuAvailable = false;
+    Serial.println("⚠️ BNO085 IMU not detected - continuing in FLEX-ONLY Wi-Fi mode!");
+  } else {
+    imuAvailable = true;
+    Serial.println("[BNO085] ✓ Initialized in SPI polling mode");
+    bno08x.enableReport(SH2_ROTATION_VECTOR, BNO08X_REPORT_INTERVAL_US);
+    bno08x.enableReport(SH2_ACCELEROMETER, BNO08X_REPORT_INTERVAL_US);
+    bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED, BNO08X_REPORT_INTERVAL_US);
   }
-  
-  Serial.println("[BNO085] ✓ Initialized in SPI polling mode (no INT pin needed)");
-  
-  // Enable sensor reports
-  bno08x.enableReport(SH2_ROTATION_VECTOR, BNO08X_REPORT_INTERVAL_US);
-  bno08x.enableReport(SH2_ACCELEROMETER, BNO08X_REPORT_INTERVAL_US);
-  bno08x.enableReport(SH2_GYROSCOPE_CALIBRATED, BNO08X_REPORT_INTERVAL_US);
-  
-  Serial.println("[BNO085] ✓ All sensors enabled @ 200Hz");
   
   // ULTRA OPTIMIZED WIFI SETUP
   setupWiFi();

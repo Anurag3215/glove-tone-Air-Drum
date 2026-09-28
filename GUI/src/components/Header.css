@@ -164,3 +164,55 @@
   color: var(--color-text-secondary);
   letter-spacing: 0.04em;
 }
+
+/* Wi-Fi Header Button */
+.wifi-header-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #0d0d0d;
+  border: 1px solid #262626;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wifi-header-btn:hover {
+  border-color: #444444;
+  background: #151515;
+}
+
+.wifi-header-btn.live {
+  border-color: rgba(0, 255, 157, 0.5);
+  background: rgba(0, 255, 157, 0.08);
+}
+
+.wifi-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #555555;
+}
+
+.wifi-dot.ready {
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
+}
+
+.wifi-dot.live {
+  background: #00ff9d;
+  box-shadow: 0 0 8px #00ff9d;
+}
+
+.wifi-btn-label {
+  font-size: 10.5px;
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #DDDDDD;
+}
+
+.wifi-header-btn.live .wifi-btn-label {
+  color: #00ff9d;
+}
