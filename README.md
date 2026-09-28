@@ -96,8 +96,28 @@ Built with **React**, **Three.js / React Three Fiber**, **Vite**, **Electron**, 
 
 ---
 
-## Hardware Connection (ESP32 Glove)
+## Hardware Connection (ESP32 Wi-Fi Glove)
 
-- Flash the firmware from `Esp32 Streamer/` to your ESP32 board.
-- Connect via USB serial at **115200 baud** or Bluetooth serial.
-- The interface automatically syncs flex sensor ADC values and IMU quaternions to the 3D viewport.
+### 1. ESP32 Flex Sensor Wiring (Voltage Divider with 10kΩ Pull-Down)
+Connect each flex sensor between `3.3V` and an ESP32 `ADC1` pin, with a `10kΩ` resistor from that same pin to `GND`:
+
+| Finger | Drum Triggered | ESP32 GPIO Pin | Straight (Relaxed) | Bent (Hit Trigger) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Thumb** | **KICK** | `GPIO 32` | `~750 – 850` | `<= 595` (`350 – 550`) |
+| **Index** | **TOM** | `GPIO 33` | `~750 – 850` | `<= 595` (`350 – 550`) |
+| **Middle** | **SNARE** | `GPIO 35` | `~750 – 850` | `<= 595` (`350 – 550`) |
+| **Ring** | **HI-HAT** | `GPIO 36 (VP)` | `~750 – 850` | `<= 595` (`350 – 550`) |
+| **Little (Pinky)** | **CRASH** | `GPIO 34` | `~750 – 850` | `<= 595` (`350 – 550`) |
+
+### 2. Wi-Fi Streaming Setup
+1. Start the app (`npm run dev` inside `GUI/`) and click the **`WIFI :8888`** button in the top header to view your **PC Local IP** (e.g., `192.168.1.X`).
+2. Open `Esp32 Streamer/Left_Hand_Dual_Core/Left_Hand_Dual_Core.ino` in Arduino IDE and set `WIFI_SSID`, `WIFI_PASSWORD`, and `PC_IP` to match your network and PC IP.
+3. Upload to your ESP32. The Vite backend automatically listens on **UDP Port `8888`** (`0.0.0.0:8888`), switches from mock simulation to **`WIFI LIVE`**, and streams real-time flex and IMU telemetry to the 3D Hand and 3D Air Drum Matrix.
+
+### 3. Supported ESP32 Packet Formats (UDP `:8888` / HTTP POST `/api/sensor` / WebSocket `:81`)
+The universal parser in `GUI/vite.config.js` and `GUI/src/store/sensorStore.js` auto-detects any of the following formats:
+- **JSON**: `{"thumb":780,"index":420,"middle":790,"ring":775,"pinky":390}`
+- **CSV**: `780,420,790,775,390`
+- **Labeled Text**: `Thumb: 780 | Index: 420 | Middle: 790 | Ring: 775 | Little: 390`
+- **Binary Struct (`56 bytes`)**: High-speed 200Hz `SensorPacket` struct from `Left_Hand_Dual_Core.ino`
+
